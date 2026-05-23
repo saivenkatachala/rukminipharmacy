@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Sort Stock — Rukmini Pharmacy</title>
+<link rel="icon" href="pp.png">
 <link rel="stylesheet" href="rp-styles.css"/>
 <style>
   .sort-group{margin-bottom:20px;}
@@ -169,6 +170,10 @@ function updateBadge(){
   b.textContent=a.length;
 }
 updateBadge();
+// Register re-render callback for when sync completes
+window._rpOnSyncComplete = function(){ render(); };
+RP.showSyncBanner('sort-sync-banner');
+
 
 /* ------- State ------- */
 var state={

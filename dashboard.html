@@ -47,6 +47,7 @@
     <h1>Dashboard</h1>
     <p id="greeting"></p>
   </div>
+  <div id="dashboard-sync-banner"></div>
 
   <!-- Stats row -->
   <div class="stat-grid" id="stat-grid"></div>
@@ -231,6 +232,11 @@ function showPopup(icon,title,msg){
   document.getElementById('popup-overlay').classList.add('open');
 }
 function closePopup(){ document.getElementById('popup-overlay').classList.remove('open'); }
+
+
+// Sync from Google Sheets on load — so all devices see same data
+window._rpOnSyncComplete = function(){ buildStats(); refreshAlerts(); buildRecentTable(); };
+RP.showSyncBanner('dashboard-sync-banner');
 
 buildStats();
 refreshAlerts();

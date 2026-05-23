@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Add Stock — Rukmini Pharmacy</title>
+<link rel="icon" href="pp.png">
 <link rel="stylesheet" href="rp-styles.css"/>
 <style>
   .submit-area{display:flex;gap:12px;align-items:center;margin-top:24px;flex-wrap:wrap;}
@@ -64,6 +65,7 @@
     <p>Add new medicine inventory to the pharmacy database.</p>
   </div>
 
+  <div id="add-sync-banner"></div>
   <div class="card">
     <div class="card-header">
       <span class="card-title">New Medicine Entry</span>
@@ -152,6 +154,10 @@ RP.QTY_TYPES.forEach(t=>{ const o=document.createElement('option'); o.value=t; o
 // Badge
 function updateBadge(){ const a=RP.computeAlerts(); const b=document.getElementById('alert-badge'); b.style.display=a.length?'inline-block':'none'; b.textContent=a.length; }
 updateBadge();
+// Register re-render callback for when sync completes
+window._rpOnSyncComplete = function(){ buildRecentTable(); };
+RP.showSyncBanner('add-sync-banner');
+
 
 function checkQtyLive(){
   const v=parseInt(document.getElementById('quantity').value)||0;

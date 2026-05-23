@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>View Stock — Rukmini Pharmacy</title>
+<link rel="icon" href="pp.png">
 <link rel="stylesheet" href="rp-styles.css"/>
 <style>
   .qty-cell{display:flex;align-items:center;gap:8px;}
@@ -79,6 +80,7 @@
     <p>Browse, search, edit and manage all medicine inventory.</p>
   </div>
 
+  <div id="view-sync-banner"></div>
   <div class="card">
     <div class="card-header" style="flex-wrap:wrap;gap:12px;padding-bottom:16px;">
       <div class="toolbar" style="margin:0;flex:1;">
@@ -131,6 +133,10 @@ RP.MED_TYPES.forEach(t=>typeFilt.innerHTML+=`<option value="${t}">${t}</option>`
 // Badge
 function updateBadge(){ const a=RP.computeAlerts(); const b=document.getElementById('alert-badge'); b.style.display=a.length?'inline-block':'none'; b.textContent=a.length; }
 updateBadge();
+// Register re-render callback for when sync completes
+window._rpOnSyncComplete = function(){ renderTable(); };
+RP.showSyncBanner('view-sync-banner');
+
 
 let currentPage=1;
 let editId=null;

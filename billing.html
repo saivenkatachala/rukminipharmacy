@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Bill Generation — Rukmini Pharmacy</title>
+<link rel="icon" href="pp.png">
 <link rel="stylesheet" href="rp-styles.css"/>
 <style>
   .bill-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;}
@@ -294,6 +295,10 @@ function updateBadge(){
   b.textContent=a.length;
 }
 updateBadge();
+// Register re-render callback for when sync completes
+window._rpOnSyncComplete = function(){ renderRecentBills(); addBillRow && addBillRow(); };
+RP.showSyncBanner('bill-sync-banner');
+
 
 // Set today's date
 document.getElementById('b-date').value=new Date().toISOString().slice(0,10);

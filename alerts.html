@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Alerts — Rukmini Pharmacy</title>
+<link rel="icon" href="pp.png">
 <link rel="stylesheet" href="rp-styles.css"/>
 <style>
   .alert-big{
@@ -62,6 +63,7 @@
       <button class="btn btn-danger btn-sm" onclick="dismissAll()">✕ Dismiss All</button>
     </div>
   </div>
+  <div id="alerts-sync-banner"></div>
 
   <!-- Stats row -->
   <div class="stat-grid" id="alert-stat-grid" style="margin-bottom:20px;"></div>
@@ -225,6 +227,11 @@ function goToItem(id){
   sessionStorage.setItem('highlight_item',id);
   window.location.href='view-stock.html';
 }
+
+
+// Sync from Google Sheets — all devices see same alert data
+window._rpOnSyncComplete = function(){ renderAlerts(); };
+RP.showSyncBanner('alerts-sync-banner');
 
 renderAlerts();
 </script>
