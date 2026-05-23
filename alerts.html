@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Alerts — Rukmini Pharmacy</title>
+<link rel="stylesheet" href="rp-styles.css"/>
+<style>
+  .alert-big{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:18px 20px;display:flex;align-items:flex-start;gap:14px;
+    margin-bottom:12px;transition:.2s;box-shadow:var(--card-shadow);
+  }
+  .alert-big:hover{transform:translateX(4px);}
+  .alert-big.danger{border-left:4px solid var(--danger);}
+  .alert-big.warn{border-left:4px solid var(--warn);}
+  .alert-big.info{border-left:4px solid var(--info);}
+  .alert-icon-big{font-size:26px;flex-shrink:0;margin-top:2px;}
+  .alert-content{flex:1;}
+  .alert-content .alert-title{font-weight:600;font-size:.95rem;margin-bottom:4px;}
+  .alert-content .alert-detail{color:var(--muted);font-size:.83rem;line-height:1.5;}
+  .alert-content .alert-meta{font-size:.75rem;color:var(--muted);margin-top:6px;}
+  .alert-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+  .alert-filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+  .filter-chip{
+    padding:6px 14px;border-radius:20px;border:1px solid var(--border);
+    background:var(--surface2);color:var(--text2);cursor:pointer;
+    font-size:.82rem;font-family:'DM Sans',sans-serif;transition:.2s;
+  }
+  .filter-chip:hover,.filter-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.08);}
+  .filter-chip.active-danger{border-color:var(--danger);color:var(--danger);background:rgba(255,77,109,.08);}
+  .filter-chip.active-warn{border-color:var(--warn);color:var(--warn);background:rgba(255,183,3,.08);}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand"><div class="brand-icon">&#128138;</div><span>Rukmini Pharmacy</span></a>
+    <div class="navbar-nav">
+    <a href="dashboard.html" class="nav-link">&#127968; <span class="nav-text">Home</span></a>
+    <a href="add-stock.html" class="nav-link">&#10133; <span class="nav-text">Add Stock</span></a>
+    <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
+    <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
+    <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
+    <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
+    <a href="alerts.html" class="nav-link active">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
+  </div>
+  <div class="navbar-right">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+<div class="container">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1>🔔 Alerts Center</h1>
+      <p>All active warnings for stock and expiry.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary btn-sm" onclick="restoreAll()">♻️ Restore All</button>
+      <button class="btn btn-danger btn-sm" onclick="dismissAll()">✕ Dismiss All</button>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stat-grid" id="alert-stat-grid" style="margin-bottom:20px;"></div>
+
+  <!-- Filter chips -->
+  <div class="alert-filter-row">
+    <button class="filter-chip active" onclick="setFilter('all',this)">All Alerts</button>
+    <button class="filter-chip" onclick="setFilter('expired',this)">💀 Expired</button>
+    <button class="filter-chip" onclick="setFilter('expiry',this)">⏰ Near Expiry</button>
+    <button class="filter-chip" onclick="setFilter('zero',this)">⛔ Out of Stock</button>
+    <button class="filter-chip" onclick="setFilter('low',this)">⚠️ Low Stock</button>
+  </div>
+
+  <div id="alert-container">
+    <div class="empty-state"><div class="empty-icon">🔍</div><p>Loading alerts…</p></div>
+  </div>
+
+  <!-- Dismissed section -->
+  <div class="card" style="margin-top:24px;">
+    <div class="card-header">
+      <span class="card-title">🗂️ Dismissed Alerts</span>
+      <button class="btn btn-sm btn-secondary" onclick="restoreAll()">Restore All</button>
+    </div>
+    <div class="card-body" id="dismissed-list">
+      <div class="empty-state"><p>No dismissed alerts.</p></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="rp-core.js"></script>
+<script>
+RP.guard();
+RP.applyTheme();
+function logout(){ sessionStorage.removeItem('rp_auth'); window.location.href='index.html'; }
+function toggleTheme(){ const t=RP.getTheme()==='dark'?'light':'dark'; RP.setTheme(t); document.getElementById('theme-btn').innerHTML=t==='dark'?'&#127769;':'&#9728;'; }
+document.getElementById('theme-btn').innerHTML=RP.getTheme()==='dark'?'&#127769;':'&#9728;';
+
+let currentFilter='all';
+let allAlerts=[];
+
+function getAllPossibleAlerts(){
+  const stock=RP.getStock();
+  const now=new Date(), warnDate=new Date();
+  warnDate.setMonth(warnDate.getMonth()+RP.EXPIRY_WARN_MONTHS);
+  const alerts=[];
+  stock.forEach(item=>{
+    const qty=parseInt(item.quantity)||0;
+    if(qty>0&&qty<=RP.LOW_STOCK) alerts.push({id:`low_${item.id}`,type:'low',item,msg:`Low stock: ${item.name}`,detail:`Only ${qty} ${item.qtyType} remaining. Restock recommended.`});
+    if(qty===0) alerts.push({id:`zero_${item.id}`,type:'zero',item,msg:`Out of stock: ${item.name}`,detail:`No stock available. Please restock immediately.`});
+    if(item.expiry){
+      const exp=new Date(item.expiry);
+      if(exp<now) alerts.push({id:`expired_${item.id}`,type:'expired',item,msg:`EXPIRED: ${item.name}`,detail:`Expired on ${item.expiry}. Remove from shelves immediately.`});
+      else if(exp<=warnDate){
+        const days=Math.ceil((exp-now)/(1000*60*60*24));
+        alerts.push({id:`expiry_${item.id}`,type:'expiry',item,msg:`Near expiry: ${item.name}`,detail:`Expires in ${days} day${days!==1?'s':''} (${item.expiry}). Sell or return soon.`});
+      }
+    }
+  });
+  return alerts;
+}
+
+function buildStats(all){
+  const dismissed=RP.getDismissedAlerts();
+  const active=all.filter(a=>!dismissed.includes(a.id));
+  const counts={all:active.length,expired:0,expiry:0,zero:0,low:0};
+  active.forEach(a=>{ if(counts[a.type]!==undefined) counts[a.type]++; });
+  document.getElementById('alert-stat-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-icon">🔔</div><div class="stat-val" style="color:var(--warn)">${counts.all}</div><div class="stat-lbl">Active Alerts</div></div>
+    <div class="stat-card"><div class="stat-icon">💀</div><div class="stat-val" style="color:var(--danger)">${counts.expired}</div><div class="stat-lbl">Expired Items</div></div>
+    <div class="stat-card"><div class="stat-icon">⏰</div><div class="stat-val" style="color:var(--warn)">${counts.expiry}</div><div class="stat-lbl">Near Expiry</div></div>
+    <div class="stat-card"><div class="stat-icon">⛔</div><div class="stat-val" style="color:var(--muted)">${counts.zero}</div><div class="stat-lbl">Out of Stock</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" style="color:var(--warn)">${counts.low}</div><div class="stat-lbl">Low Stock</div></div>
+  `;
+  const b=document.getElementById('alert-badge');
+  b.style.display=counts.all?'inline-block':'none';
+  b.textContent=counts.all;
+}
+
+function renderAlerts(){
+  allAlerts=getAllPossibleAlerts();
+  const dismissed=RP.getDismissedAlerts();
+  buildStats(allAlerts);
+
+  let active=allAlerts.filter(a=>!dismissed.includes(a.id));
+  if(currentFilter!=='all') active=active.filter(a=>a.type===currentFilter);
+
+  const container=document.getElementById('alert-container');
+  if(!active.length){
+    container.innerHTML=`<div class="empty-state"><div class="empty-icon">✅</div><p>No ${currentFilter==='all'?'':currentFilter+' '}alerts right now!</p></div>`;
+  } else {
+    container.innerHTML=active.map(a=>{
+      const cls=a.type==='expired'||a.type==='zero'?'danger':'warn';
+      const icon=a.type==='expired'?'💀':a.type==='zero'?'⛔':a.type==='expiry'?'⏰':'⚠️';
+      return `<div class="alert-big ${cls}" id="ab-${a.id}">
+        <div class="alert-icon-big">${icon}</div>
+        <div class="alert-content">
+          <div class="alert-title">${a.msg}</div>
+          <div class="alert-detail">${a.detail}</div>
+          <div class="alert-meta">
+            Type: ${a.item.medType} · Brand: ${a.item.brand||'—'} · Qty Type: ${a.item.qtyType}
+            ${a.item.expiry?` · Expiry: ${a.item.expiry}`:''}
+          </div>
+        </div>
+        <div class="alert-actions">
+          <button class="btn btn-sm btn-secondary" onclick="goToItem('${a.item.id}')">View</button>
+          <button class="btn btn-sm btn-${cls==='danger'?'danger':'warn'}" onclick="dismissOne('${a.id}')">Dismiss</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Dismissed
+  const dis=allAlerts.filter(a=>dismissed.includes(a.id));
+  const disList=document.getElementById('dismissed-list');
+  if(!dis.length){ disList.innerHTML=`<div class="empty-state"><p>No dismissed alerts.</p></div>`; return; }
+  disList.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">
+    ${dis.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-radius:10px;gap:12px;">
+      <span style="color:var(--muted);font-size:.85rem;">${a.msg}</span>
+      <button class="btn btn-sm btn-secondary" onclick="restoreOne('${a.id}')">Restore</button>
+    </div>`).join('')}
+  </div>`;
+}
+
+function setFilter(f,el){
+  currentFilter=f;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active','active-danger','active-warn'));
+  el.classList.add('active');
+  renderAlerts();
+}
+
+function dismissOne(id){
+  RP.dismissAlert(id);
+  renderAlerts();
+  RP.toast('Alert dismissed.','info');
+}
+
+function restoreOne(id){
+  const d=RP.getDismissedAlerts().filter(x=>x!==id);
+  RP.saveDismissedAlerts(d);
+  renderAlerts();
+  RP.toast('Alert restored.','success');
+}
+
+function dismissAll(){
+  if(!confirm('Dismiss all active alerts?')) return;
+  const all=getAllPossibleAlerts().map(a=>a.id);
+  RP.saveDismissedAlerts([...new Set([...RP.getDismissedAlerts(),...all])]);
+  renderAlerts();
+  RP.toast('All alerts dismissed.','warn');
+}
+
+function restoreAll(){
+  RP.saveDismissedAlerts([]);
+  renderAlerts();
+  RP.toast('All alerts restored.','success');
+}
+
+function goToItem(id){
+  sessionStorage.setItem('highlight_item',id);
+  window.location.href='view-stock.html';
+}
+
+renderAlerts();
+</script>
+</body>
+</html>

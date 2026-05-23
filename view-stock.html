@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>View Stock — Rukmini Pharmacy</title>
+<link rel="stylesheet" href="rp-styles.css"/>
+<style>
+  .qty-cell{display:flex;align-items:center;gap:8px;}
+  .edit-modal .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:600px){.edit-modal .form-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand"><div class="brand-icon">&#128138;</div><span>Rukmini Pharmacy</span></a>
+    <div class="navbar-nav">
+    <a href="dashboard.html" class="nav-link">&#127968; <span class="nav-text">Home</span></a>
+    <a href="add-stock.html" class="nav-link">&#10133; <span class="nav-text">Add Stock</span></a>
+    <a href="view-stock.html" class="nav-link active">&#128230; <span class="nav-text">View Stock</span></a>
+    <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
+    <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
+    <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
+    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
+  </div>
+  <div class="navbar-right">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal edit-modal">
+    <div class="modal-header">
+      <h3>✏️ Edit Medicine</h3>
+      <span class="modal-close" onclick="closeEdit()">✕</span>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Type of Medicine</label>
+        <select id="e-medType"></select></div>
+      <div class="field"><label>Medicine Name</label>
+        <input type="text" id="e-name"/></div>
+      <div class="field"><label>Brand Name</label>
+        <input type="text" id="e-brand"/></div>
+      <div class="field"><label>Quantity Type</label>
+        <select id="e-qtyType"></select></div>
+      <div class="field"><label>Stock Available</label>
+        <input type="number" id="e-quantity" min="0"/></div>
+      <div class="field"><label>Expiry Date</label>
+        <input type="date" id="e-expiry"/></div>
+      <div class="field" style="grid-column:1/-1;"><label>Notes</label>
+        <textarea id="e-notes"></textarea></div>
+    </div>
+    <div class="flex-end">
+      <button class="btn btn-secondary" onclick="closeEdit()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">💾 Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="modal-overlay" id="del-modal">
+  <div class="modal" style="max-width:380px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🗑️</div>
+    <h3>Delete this entry?</h3>
+    <p style="color:var(--muted);margin:12px 0 24px;">This action cannot be undone.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-secondary" onclick="closeDelModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+<div class="container">
+  <div class="page-header">
+    <h1>📦 View Stock</h1>
+    <p>Browse, search, edit and manage all medicine inventory.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="flex-wrap:wrap;gap:12px;padding-bottom:16px;">
+      <div class="toolbar" style="margin:0;flex:1;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Search medicine, brand, type…" oninput="renderTable()"/>
+        </div>
+        <select class="field" style="width:auto;padding:9px 12px;" id="type-filter" onchange="renderTable()">
+          <option value="">All Types</option>
+        </select>
+      </div>
+      <div class="per-page-wrap">
+        Show
+        <select id="per-page" onchange="renderTable()">
+          <option value="10">10</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="500">500</option>
+        </select>
+        per page
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:0;">
+      <div class="table-wrap" id="table-wrap">Loading…</div>
+      <div id="pagination" class="pagination" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="rp-core.js"></script>
+<script>
+RP.guard();
+RP.applyTheme();
+function logout(){ sessionStorage.removeItem('rp_auth'); window.location.href='index.html'; }
+function toggleTheme(){ const t=RP.getTheme()==='dark'?'light':'dark'; RP.setTheme(t); document.getElementById('theme-btn').innerHTML=t==='dark'?'&#127769;':'&#9728;'; }
+document.getElementById('theme-btn').innerHTML=RP.getTheme()==='dark'?'&#127769;':'&#9728;';
+
+// Populate edit modal dropdowns
+const eMedSel=document.getElementById('e-medType');
+const eQtySel=document.getElementById('e-qtyType');
+RP.MED_TYPES.forEach(t=>{ eMedSel.innerHTML+=`<option value="${t}">${t}</option>`; });
+RP.QTY_TYPES.forEach(t=>{ eQtySel.innerHTML+=`<option value="${t}">${t}</option>`; });
+
+// Populate filter dropdown
+const typeFilt=document.getElementById('type-filter');
+RP.MED_TYPES.forEach(t=>typeFilt.innerHTML+=`<option value="${t}">${t}</option>`);
+
+// Badge
+function updateBadge(){ const a=RP.computeAlerts(); const b=document.getElementById('alert-badge'); b.style.display=a.length?'inline-block':'none'; b.textContent=a.length; }
+updateBadge();
+
+let currentPage=1;
+let editId=null;
+let deleteId=null;
+
+function getFiltered(){
+  const q=document.getElementById('search-input').value.toLowerCase();
+  const tf=document.getElementById('type-filter').value;
+  return RP.getStock().filter(s=>{
+    const matchQ=!q||s.name.toLowerCase().includes(q)||
+      (s.brand||'').toLowerCase().includes(q)||
+      s.medType.toLowerCase().includes(q)||
+      s.qtyType.toLowerCase().includes(q);
+    const matchT=!tf||s.medType===tf;
+    return matchQ&&matchT;
+  });
+}
+
+function renderTable(){
+  const data=getFiltered();
+  const pp=parseInt(document.getElementById('per-page').value)||10;
+  const totalPages=Math.max(1,Math.ceil(data.length/pp));
+  if(currentPage>totalPages) currentPage=1;
+  const slice=data.slice((currentPage-1)*pp, currentPage*pp);
+  const wrap=document.getElementById('table-wrap');
+
+  if(!data.length){
+    wrap.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><p>No results found.</p></div>`;
+    document.getElementById('pagination').innerHTML='';
+    return;
+  }
+
+  const now=new Date();
+  const warnDate=new Date(); warnDate.setMonth(warnDate.getMonth()+RP.EXPIRY_WARN_MONTHS);
+
+  wrap.innerHTML=`<table>
+    <thead><tr>
+      <th>#</th><th>Medicine</th><th>Type</th><th>Brand</th>
+      <th>Qty</th><th>Unit</th><th>Expiry</th><th>Status</th><th>Actions</th>
+    </tr></thead>
+    <tbody>
+    ${slice.map((s,i)=>{
+      const qty=parseInt(s.quantity)||0;
+      const exp=s.expiry?new Date(s.expiry):null;
+      let statusBadge='';
+      if(qty===0) statusBadge='<span class="badge badge-muted">⛔ Out of Stock</span>';
+      else if(qty<=RP.LOW_STOCK) statusBadge='<span class="badge badge-warn">⚠️ Low</span>';
+      else statusBadge='<span class="badge badge-success">✓ OK</span>';
+      let expiryDisplay=RP.fmtDate(s.expiry);
+      if(exp&&exp<now) expiryDisplay=`<span style="color:var(--danger)">💀 ${RP.fmtDate(s.expiry)}</span>`;
+      else if(exp&&exp<=warnDate) expiryDisplay=`<span style="color:var(--warn)">⏰ ${RP.fmtDate(s.expiry)}</span>`;
+      return `<tr>
+        <td class="mono" style="color:var(--muted)">${(currentPage-1)*pp+i+1}</td>
+        <td><strong>${s.name}</strong>${s.notes?`<br><span style="font-size:.75rem;color:var(--muted)">${s.notes}</span>`:''}</td>
+        <td><span class="badge badge-info">${s.medType}</span></td>
+        <td>${s.brand||'—'}</td>
+        <td class="mono"><strong>${qty}</strong></td>
+        <td>${s.qtyType}</td>
+        <td>${expiryDisplay}</td>
+        <td>${statusBadge}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm btn-secondary btn-icon" title="Edit" onclick="openEdit('${s.id}')">✏️</button>
+            <button class="btn btn-sm btn-danger btn-icon" title="Delete" onclick="openDelete('${s.id}')">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+
+  // Pagination
+  const pg=document.getElementById('pagination');
+  if(totalPages<=1){ pg.innerHTML=`<span class="page-info">Showing ${slice.length} of ${data.length} records</span>`; return; }
+  let pHtml=`<span class="page-info">Page ${currentPage} of ${totalPages} (${data.length} records)</span>`;
+  if(currentPage>1) pHtml+=`<button class="page-btn" onclick="gotoPage(${currentPage-1})">← Prev</button>`;
+  const start=Math.max(1,currentPage-2), end=Math.min(totalPages,currentPage+2);
+  for(let p=start;p<=end;p++) pHtml+=`<button class="page-btn ${p===currentPage?'active':''}" onclick="gotoPage(${p})">${p}</button>`;
+  if(currentPage<totalPages) pHtml+=`<button class="page-btn" onclick="gotoPage(${currentPage+1})">Next →</button>`;
+  pg.innerHTML=pHtml;
+}
+
+function gotoPage(p){ currentPage=p; renderTable(); window.scrollTo(0,0); }
+
+// Edit
+function openEdit(id){
+  editId=id;
+  const s=RP.getStock().find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('e-medType').value=s.medType;
+  document.getElementById('e-name').value=s.name;
+  document.getElementById('e-brand').value=s.brand||'';
+  document.getElementById('e-qtyType').value=s.qtyType;
+  document.getElementById('e-quantity').value=s.quantity;
+  document.getElementById('e-expiry').value=s.expiry||'';
+  document.getElementById('e-notes').value=s.notes||'';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEdit(){ document.getElementById('edit-modal').classList.remove('open'); editId=null; }
+function saveEdit(){
+  if(!editId) return;
+  const stock=RP.getStock();
+  const idx=stock.findIndex(x=>x.id===editId);
+  if(idx===-1) return;
+  stock[idx]={
+    ...stock[idx],
+    medType:document.getElementById('e-medType').value,
+    name:document.getElementById('e-name').value.trim(),
+    brand:document.getElementById('e-brand').value.trim(),
+    qtyType:document.getElementById('e-qtyType').value,
+    quantity:parseInt(document.getElementById('e-quantity').value)||0,
+    expiry:document.getElementById('e-expiry').value,
+    notes:document.getElementById('e-notes').value.trim(),
+    updatedOn:new Date().toISOString().slice(0,10)
+  };
+  RP.saveStock(stock);
+  RP.postToSheet({action:'updateStock',data:stock[idx]});
+  closeEdit();
+  renderTable();
+  updateBadge();
+  RP.toast('✅ Stock updated successfully!','success');
+}
+
+// Delete
+function openDelete(id){ deleteId=id; document.getElementById('del-modal').classList.add('open'); }
+function closeDelModal(){ document.getElementById('del-modal').classList.remove('open'); deleteId=null; }
+function confirmDelete(){
+  if(!deleteId) return;
+  const stock=RP.getStock().filter(x=>x.id!==deleteId);
+  RP.saveStock(stock);
+  RP.postToSheet({action:'deleteStock',id:deleteId});
+  closeDelModal();
+  renderTable();
+  updateBadge();
+  RP.toast('🗑️ Entry deleted.','warn');
+}
+
+renderTable();
+</script>
+</body>
+</html>

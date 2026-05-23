@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Rukmini Pharmacy — Login</title>
+<link rel="icon" href="pp.png">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#0a0f1e;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;
+    --accent:#00d4aa;--accent2:#0099ff;--danger:#ff4d6d;--warn:#ffb703;
+    --text:#e8f0fe;--muted:#7b91b0;--white:#ffffff;
+    --grad:linear-gradient(135deg,#00d4aa,#0099ff);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+  }
+  /* Animated BG */
+  .bg-anim{position:fixed;inset:0;z-index:0;pointer-events:none;}
+  .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.15;animation:float 8s ease-in-out infinite;}
+  .orb1{width:500px;height:500px;background:#00d4aa;top:-100px;left:-100px;animation-delay:0s;}
+  .orb2{width:400px;height:400px;background:#0099ff;bottom:-80px;right:-80px;animation-delay:3s;}
+  .orb3{width:300px;height:300px;background:#7c3aed;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:1.5s;}
+  @keyframes float{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-30px) scale(1.05);}}
+  /* Grid overlay */
+  body::before{
+    content:'';position:fixed;inset:0;
+    background-image:linear-gradient(rgba(0,212,170,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,170,.03) 1px,transparent 1px);
+    background-size:50px 50px;z-index:0;
+  }
+  .login-wrap{position:relative;z-index:1;width:100%;max-width:460px;padding:20px;}
+  .logo-area{text-align:center;margin-bottom:40px;}
+  .logo-icon{
+    width:80px;height:80px;background:var(--grad);border-radius:24px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:32px;margin:0 auto 16px;
+    box-shadow:0 0 40px rgba(0,212,170,.4);
+    animation:pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{box-shadow:0 0 40px rgba(0,212,170,.4);}50%{box-shadow:0 0 60px rgba(0,212,170,.7);}}
+  .logo-area h1{
+    font-family:'Playfair Display',serif;font-size:2rem;
+    background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .logo-area p{color:var(--muted);font-size:.9rem;margin-top:4px;letter-spacing:.05em;}
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:24px;
+    padding:40px;box-shadow:0 20px 60px rgba(0,0,0,.5);
+    backdrop-filter:blur(20px);
+  }
+  .card h2{font-size:1.4rem;font-weight:600;margin-bottom:6px;}
+  .card p.sub{color:var(--muted);font-size:.9rem;margin-bottom:32px;}
+  .field{margin-bottom:20px;}
+  .field label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+  .input-wrap{position:relative;}
+  .input-wrap .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px;}
+  .input-wrap input{
+    width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+    color:var(--text);font-family:'DM Sans',sans-serif;font-size:.95rem;
+    padding:14px 14px 14px 42px;transition:.3s;
+  }
+  .input-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,170,.15);}
+  .toggle-pw{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);transition:.2s;}
+  .toggle-pw:hover{color:var(--accent);}
+  .btn-login{
+    width:100%;padding:15px;border:none;border-radius:12px;
+    background:var(--grad);color:#fff;font-family:'DM Sans',sans-serif;
+    font-size:1rem;font-weight:600;cursor:pointer;letter-spacing:.04em;
+    transition:.3s;position:relative;overflow:hidden;margin-top:8px;
+  }
+  .btn-login::before{
+    content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.2),transparent);
+    opacity:0;transition:.3s;
+  }
+  .btn-login:hover::before{opacity:1;}
+  .btn-login:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,212,170,.4);}
+  .btn-login:active{transform:translateY(0);}
+  .error-msg{
+    background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);
+    border-radius:10px;padding:12px 16px;color:var(--danger);
+    font-size:.87rem;margin-top:16px;display:none;text-align:center;
+  }
+  .footer-note{text-align:center;margin-top:28px;color:var(--muted);font-size:.8rem;}
+  .footer-note span{color:var(--accent);}
+  @media(max-width:500px){.card{padding:28px 22px;}}
+</style>
+</head>
+<body>
+<div class="bg-anim">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+<div class="login-wrap">
+  <div class="logo-area">
+    <div class="logo-icon">💊</div>
+    <h1>Rukmini Pharmacy</h1>
+    <p>Stock Management System</p>
+  </div>
+  <div class="card">
+    <h2>Welcome Back</h2>
+    <p class="sub">Sign in to manage your pharmacy</p>
+    <div class="field">
+      <label>Email Address</label>
+      <div class="input-wrap">
+        <span class="icon">✉</span>
+        <input type="email" id="email" placeholder="Enter your email" autocomplete="email"/>
+      </div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="icon">🔒</span>
+        <input type="password" id="password" placeholder="Enter your password"/>
+        <span class="toggle-pw" onclick="togglePw()" id="eyeIcon">👁</span>
+      </div>
+    </div>
+    <button class="btn-login" onclick="doLogin()">Sign In →</button>
+    <div class="error-msg" id="errMsg">❌ Invalid email or password. Please try again.</div>
+  </div>
+  <div class="footer-note">Powered by <span>Rukmini Pharmacy</span> © 2025</div>
+</div>
+<script>
+  const CREDS={email:'saivenkatachala@gmail.com',pass:'pharma.sasi@17'};
+  function togglePw(){
+    const p=document.getElementById('password');
+    const eye=document.getElementById('eyeIcon');
+    if(p.type==='password'){p.type='text';eye.textContent='🙈';}
+    else{p.type='password';eye.textContent='👁';}
+  }
+  function doLogin(){
+    const e=document.getElementById('email').value.trim();
+    const p=document.getElementById('password').value;
+    const err=document.getElementById('errMsg');
+    if(e===CREDS.email&&p===CREDS.pass){
+      sessionStorage.setItem('rp_auth','1');
+      window.location.href='dashboard.html';
+    } else {
+      err.style.display='block';
+      setTimeout(()=>err.style.display='none',3000);
+    }
+  }
+  document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  if(sessionStorage.getItem('rp_auth')==='1')window.location.href='dashboard.html';
+</script>
+</body>
+</html>

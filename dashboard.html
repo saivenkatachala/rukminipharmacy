@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dashboard — Rukmini Pharmacy</title>
+<link rel="icon" href="pp.png">
+<link rel="stylesheet" href="rp-styles.css"/>
+</head>
+<body>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <div class="brand-icon">&#128138;</div>
+    <span>Rukmini Pharmacy</span>
+  </a>
+    <div class="navbar-nav">
+    <a href="dashboard.html" class="nav-link active">&#127968; <span class="nav-text">Home</span></a>
+    <a href="add-stock.html" class="nav-link">&#10133; <span class="nav-text">Add Stock</span></a>
+    <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
+    <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
+    <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
+    <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
+    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
+  </div>
+  <div class="navbar-right">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<!-- AUTO POPUP container -->
+<div class="popup-overlay" id="popup-overlay">
+  <div class="popup-box">
+    <div class="popup-icon" id="popup-icon"></div>
+    <div class="popup-title" id="popup-title"></div>
+    <div class="popup-msg" id="popup-msg"></div>
+    <button class="btn btn-primary" onclick="closePopup()">Got it</button>
+  </div>
+</div>
+
+<div class="page">
+<div class="container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p id="greeting"></p>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stat-grid" id="stat-grid"></div>
+
+  <!-- Alerts Section -->
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+      <span class="card-title">⚠️ Active Alerts</span>
+      <button class="btn btn-sm btn-secondary" onclick="refreshAlerts()">Refresh</button>
+    </div>
+    <div class="card-body" id="alert-list">
+      <div class="empty-state"><div class="empty-icon">✅</div><p>All clear — no alerts right now!</p></div>
+    </div>
+  </div>
+
+  <!-- Recent stock -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📦 Recent Stock Entries</span>
+      <a href="view-stock.html" class="btn btn-sm btn-secondary">View All →</a>
+    </div>
+    <div class="card-body">
+      <div class="table-wrap" id="recent-table-wrap">
+        <div class="empty-state"><div class="empty-icon">📭</div><p>No stock entries yet.</p></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="rp-core.js"></script>
+<script>
+RP.guard();
+RP.applyTheme();
+
+function logout(){ sessionStorage.removeItem('rp_auth'); window.location.href='index.html'; }
+function toggleTheme(){
+  const t=RP.getTheme()==='dark'?'light':'dark';
+  RP.setTheme(t);
+  document.getElementById('theme-btn').innerHTML=t==='dark'?'&#127769;':'&#9728;';
+}
+document.getElementById('theme-btn').innerHTML=RP.getTheme()==='dark'?'&#127769;':'&#9728;';
+
+// Greeting
+const hr=new Date().getHours();
+document.getElementById('greeting').textContent=
+  (hr<12?'Good Morning ☀️':hr<17?'Good Afternoon 🌤️':'Good Evening 🌙')+
+  ', Pharmacy Manager! Here\'s your daily overview.';
+
+function buildStats(){
+  const stock=RP.getStock();
+  const bills=RP.getBills();
+  const alerts=RP.computeAlerts();
+  const low=stock.filter(s=>parseInt(s.quantity)<=RP.LOW_STOCK&&parseInt(s.quantity)>0).length;
+  const out=stock.filter(s=>parseInt(s.quantity)===0).length;
+  document.getElementById('stat-grid').innerHTML=`
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-val accent">${stock.length}</div>
+      <div class="stat-lbl">Total Products</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔴</div>
+      <div class="stat-val" style="color:var(--danger)">${low}</div>
+      <div class="stat-lbl">Low Stock Items</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⛔</div>
+      <div class="stat-val" style="color:var(--muted)">${out}</div>
+      <div class="stat-lbl">Out of Stock</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🧾</div>
+      <div class="stat-val accent">${bills.length}</div>
+      <div class="stat-lbl">Bills Generated</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔔</div>
+      <div class="stat-val" style="color:var(--warn)">${alerts.length}</div>
+      <div class="stat-lbl">Active Alerts</div>
+    </div>
+  `;
+}
+
+function refreshAlerts(){
+  const alerts=RP.computeAlerts();
+  const badge=document.getElementById('alert-badge');
+  badge.style.display=alerts.length?'inline-block':'none';
+  badge.textContent=alerts.length;
+
+  const list=document.getElementById('alert-list');
+  if(!alerts.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">✅</div><p>All clear — no alerts right now!</p></div>`;
+    return;
+  }
+  list.innerHTML=alerts.map(a=>{
+    const cls=a.type==='expired'||a.type==='zero'?'danger':a.type==='expiry'?'warn':'warn';
+    const icon=a.type==='expired'?'💀':a.type==='zero'?'⛔':a.type==='expiry'?'⏰':'⚠️';
+    return `<div class="alert-card ${cls}" id="ac-${a.id}">
+      <span class="alert-icon">${icon}</span>
+      <span class="alert-msg">${a.msg}</span>
+      <span class="alert-dismiss" onclick="dismissAlert('${a.id}')">✕</span>
+    </div>`;
+  }).join('');
+  buildStats();
+}
+
+function dismissAlert(id){
+  RP.dismissAlert(id);
+  document.getElementById('ac-'+id)?.remove();
+  refreshAlerts();
+}
+
+function buildRecentTable(){
+  const stock=[...RP.getStock()].reverse().slice(0,8);
+  if(!stock.length) return;
+  const wrap=document.getElementById('recent-table-wrap');
+  wrap.innerHTML=`<table>
+    <thead><tr>
+      <th>Medicine</th><th>Type</th><th>Brand</th>
+      <th>Quantity</th><th>Qty Type</th><th>Expiry</th><th>Status</th>
+    </tr></thead>
+    <tbody>
+      ${stock.map(s=>{
+        const qty=parseInt(s.quantity)||0;
+        let badge='<span class="badge badge-success">✓ OK</span>';
+        if(qty===0) badge='<span class="badge badge-muted">Out</span>';
+        else if(qty<=RP.LOW_STOCK) badge='<span class="badge badge-warn">⚠ Low</span>';
+        return `<tr>
+          <td><strong>${s.name}</strong></td>
+          <td><span class="badge badge-info">${s.medType}</span></td>
+          <td>${s.brand||'—'}</td>
+          <td class="mono">${qty}</td>
+          <td>${s.qtyType}</td>
+          <td>${RP.fmtDate(s.expiry)}</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+// Auto popup for critical alerts
+function showAutoPopups(){
+  const stock=RP.getStock();
+  const dismissed=RP.getDismissedAlerts();
+  const now=new Date();
+  const warnDate=new Date(); warnDate.setMonth(warnDate.getMonth()+RP.EXPIRY_WARN_MONTHS);
+  let critical=[];
+  stock.forEach(s=>{
+    const qty=parseInt(s.quantity)||0;
+    if(qty<=RP.LOW_STOCK&&qty>0&&!dismissed.includes('popup_low_'+s.id))
+      critical.push({type:'low',s});
+    if(s.expiry){
+      const exp=new Date(s.expiry);
+      if(exp<=warnDate&&exp>=now&&!dismissed.includes('popup_exp_'+s.id))
+        critical.push({type:'expiry',s,exp});
+    }
+  });
+  if(critical.length>0){
+    const c=critical[0];
+    if(c.type==='low'){
+      showPopup('⚠️','Low Stock Alert',
+        `<strong>${c.s.name}</strong> is running low!<br>Only <strong>${c.s.quantity} ${c.s.qtyType}</strong> remaining.<br>Please restock soon.`);
+      RP.dismissAlert('popup_low_'+c.s.id); // prevent re-show per session
+      sessionStorage.setItem('popup_low_'+c.s.id,'1');
+    } else {
+      const days=Math.ceil((c.exp-now)/(1000*60*60*24));
+      showPopup('⏰','Expiry Alert',
+        `<strong>${c.s.name}</strong> expires in <strong>${days} days</strong> (${c.s.expiry}).<br>Take action before it expires.`);
+      sessionStorage.setItem('popup_exp_'+c.s.id,'1');
+    }
+  }
+}
+
+let popupQueue=[];
+function showPopup(icon,title,msg){
+  document.getElementById('popup-icon').textContent=icon;
+  document.getElementById('popup-title').textContent=title;
+  document.getElementById('popup-msg').innerHTML=msg;
+  document.getElementById('popup-overlay').classList.add('open');
+}
+function closePopup(){ document.getElementById('popup-overlay').classList.remove('open'); }
+
+buildStats();
+refreshAlerts();
+buildRecentTable();
+setTimeout(showAutoPopups, 800);
+</script>
+</body>
+</html>

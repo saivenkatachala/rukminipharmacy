@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sort Stock — Rukmini Pharmacy</title>
+<link rel="stylesheet" href="rp-styles.css"/>
+<style>
+  .sort-group{margin-bottom:20px;}
+  .sort-group-label{
+    font-size:.75rem;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;
+  }
+  .sort-chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    padding:8px 16px;border-radius:20px;border:1px solid var(--border);
+    background:var(--surface2);color:var(--text2);cursor:pointer;
+    font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:500;
+    transition:.2s;user-select:none;
+  }
+  .chip:hover{border-color:var(--accent);color:var(--accent);}
+  .chip.active{
+    border-color:var(--accent);color:var(--accent);
+    background:rgba(0,212,170,.1);font-weight:600;
+  }
+  .chip.active-type{
+    border-color:var(--accent2);color:var(--accent2);
+    background:rgba(0,153,255,.1);font-weight:600;
+  }
+  .toolbar-row{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:12px;margin-bottom:16px;
+  }
+  .dl-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .result-meta{
+    font-size:.82rem;color:var(--muted);
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  }
+  .sort-indicator{
+    display:inline-flex;align-items:center;gap:4px;
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:6px;padding:3px 10px;font-size:.75rem;color:var(--text2);
+  }
+  thead th.sortable{cursor:pointer;user-select:none;}
+  thead th.sortable:hover{color:var(--accent);}
+  thead th .sort-arrow{margin-left:4px;opacity:.4;font-size:.7rem;}
+  thead th.sorted .sort-arrow{opacity:1;color:var(--accent);}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <div class="brand-icon">&#128138;</div><span>Rukmini Pharmacy</span>
+  </a>
+    <div class="navbar-nav">
+    <a href="dashboard.html" class="nav-link">&#127968; <span class="nav-text">Home</span></a>
+    <a href="add-stock.html" class="nav-link">&#10133; <span class="nav-text">Add Stock</span></a>
+    <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
+    <a href="sort-stock.html" class="nav-link active">&#8964; <span class="nav-text">Sort Stock</span></a>
+    <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
+    <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
+    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
+  </div>
+  <div class="navbar-right">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+<div class="container">
+  <div class="page-header">
+    <h1>Sort Stock</h1>
+    <p>Sort, filter and download your inventory data.</p>
+  </div>
+
+  <!-- CONTROLS CARD -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Sort &amp; Filter</span>
+      <button class="btn btn-sm btn-secondary" onclick="resetAll()">Reset All</button>
+    </div>
+    <div class="card-body">
+
+      <!-- Sort by Quantity -->
+      <div class="sort-group">
+        <div class="sort-group-label">Sort by Stock Quantity</div>
+        <div class="sort-chips">
+          <button class="chip" id="chip-qty-asc" onclick="setSort('qty-asc')">Qty: Low to High</button>
+          <button class="chip" id="chip-qty-desc" onclick="setSort('qty-desc')">Qty: High to Low</button>
+        </div>
+      </div>
+
+      <div class="section-sep"></div>
+
+      <!-- Sort by Expiry -->
+      <div class="sort-group" style="margin-top:16px;">
+        <div class="sort-group-label">Sort by Expiry Date</div>
+        <div class="sort-chips">
+          <button class="chip" id="chip-exp-asc" onclick="setSort('exp-asc')">Expiry: Soonest First</button>
+          <button class="chip" id="chip-exp-desc" onclick="setSort('exp-desc')">Expiry: Latest First</button>
+        </div>
+      </div>
+
+      <div class="section-sep"></div>
+
+      <!-- Filter by Type -->
+      <div class="sort-group" style="margin-top:16px;margin-bottom:0;">
+        <div class="sort-group-label">Filter by Medicine Type</div>
+        <div class="sort-chips" id="type-chips">
+          <!-- built by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RESULTS CARD -->
+  <div class="card">
+    <div class="card-header" style="flex-wrap:wrap;gap:10px;">
+      <div class="result-meta">
+        <span id="result-title" style="font-weight:600;color:var(--text);">All Stock</span>
+        <span class="sort-indicator" id="sort-indicator">No sort applied</span>
+      </div>
+      <div class="dl-btns">
+        <div class="per-page-wrap">
+          Show
+          <select id="per-page" onchange="goPage(1)">
+            <option value="10">10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="500">500</option>
+          </select>
+          per page
+        </div>
+        <button class="btn btn-success btn-sm" onclick="downloadCSV()">Download CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadPrint()">Print / PDF</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:0;">
+      <div class="table-wrap" id="sort-table-wrap">
+        <div class="empty-state">
+          <div class="empty-icon" style="font-size:36px;">&#128230;</div>
+          <p>Add stock first to see results.</p>
+        </div>
+      </div>
+      <div id="sort-pagination" class="pagination" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="rp-core.js"></script>
+<script>
+RP.guard();
+RP.applyTheme();
+function logout(){ sessionStorage.removeItem('rp_auth'); window.location.href='index.html'; }
+function toggleTheme(){
+  var t=RP.getTheme()==='dark'?'light':'dark';
+  RP.setTheme(t);
+  document.getElementById('theme-btn').innerHTML=t==='dark'?'&#127769;':'&#9728;';
+}
+document.getElementById('theme-btn').innerHTML=RP.getTheme()==='dark'?'&#127769;':'&#9728;';
+
+function updateBadge(){
+  var a=RP.computeAlerts();
+  var b=document.getElementById('alert-badge');
+  b.style.display=a.length?'inline-block':'none';
+  b.textContent=a.length;
+}
+updateBadge();
+
+/* ------- State ------- */
+var state={
+  sort: '',       // 'qty-asc' | 'qty-desc' | 'exp-asc' | 'exp-desc' | ''
+  type: '',       // medicine type or ''
+  page: 1
+};
+
+/* ------- Build type filter chips ------- */
+(function buildTypeChips(){
+  var container=document.getElementById('type-chips');
+  var allBtn=document.createElement('button');
+  allBtn.className='chip active';
+  allBtn.id='chip-type-all';
+  allBtn.textContent='All Types';
+  allBtn.onclick=function(){ setType(''); };
+  container.appendChild(allBtn);
+
+  RP.MED_TYPES.forEach(function(t){
+    var btn=document.createElement('button');
+    btn.className='chip';
+    btn.id='chip-type-'+t.replace(/\W/g,'_');
+    btn.textContent=t;
+    btn.onclick=function(){ setType(t); };
+    container.appendChild(btn);
+  });
+})();
+
+/* ------- Sort control ------- */
+function setSort(s){
+  // Toggle off if clicking same sort
+  if(state.sort===s){ state.sort=''; }
+  else { state.sort=s; }
+  state.page=1;
+  refreshSortChips();
+  render();
+}
+
+function setType(t){
+  state.type=t;
+  state.page=1;
+  // Update chip styles
+  document.querySelectorAll('#type-chips .chip').forEach(function(b){
+    b.classList.remove('active','active-type');
+  });
+  if(!t){
+    var el=document.getElementById('chip-type-all');
+    if(el) el.classList.add('active');
+  } else {
+    var el=document.getElementById('chip-type-'+t.replace(/\W/g,'_'));
+    if(el) el.classList.add('active-type');
+  }
+  render();
+}
+
+function resetAll(){
+  state.sort='';
+  state.type='';
+  state.page=1;
+  refreshSortChips();
+  // reset type chips
+  document.querySelectorAll('#type-chips .chip').forEach(function(b){
+    b.classList.remove('active','active-type');
+  });
+  var allBtn=document.getElementById('chip-type-all');
+  if(allBtn) allBtn.classList.add('active');
+  render();
+}
+
+function refreshSortChips(){
+  var sortChipIds=['qty-asc','qty-desc','exp-asc','exp-desc'];
+  sortChipIds.forEach(function(s){
+    var btn=document.getElementById('chip-'+s);
+    if(btn) btn.classList.toggle('active', state.sort===s);
+  });
+  var labels={
+    'qty-asc':'Qty: Low to High',
+    'qty-desc':'Qty: High to Low',
+    'exp-asc':'Expiry: Soonest First',
+    'exp-desc':'Expiry: Latest First',
+    '': 'No sort applied'
+  };
+  var ind=document.getElementById('sort-indicator');
+  if(ind) ind.textContent=labels[state.sort]||'No sort applied';
+}
+
+/* ------- Data pipeline ------- */
+function getProcessed(){
+  var data=[].concat(RP.getStock());
+
+  // Filter by type
+  if(state.type){
+    data=data.filter(function(s){ return s.medType===state.type; });
+  }
+
+  // Sort
+  if(state.sort==='qty-asc'){
+    data.sort(function(a,b){ return (parseInt(a.quantity)||0)-(parseInt(b.quantity)||0); });
+  } else if(state.sort==='qty-desc'){
+    data.sort(function(a,b){ return (parseInt(b.quantity)||0)-(parseInt(a.quantity)||0); });
+  } else if(state.sort==='exp-asc'){
+    data.sort(function(a,b){
+      var da=a.expiry?new Date(a.expiry):new Date('9999-12-31');
+      var db=b.expiry?new Date(b.expiry):new Date('9999-12-31');
+      return da-db;
+    });
+  } else if(state.sort==='exp-desc'){
+    data.sort(function(a,b){
+      var da=a.expiry?new Date(a.expiry):new Date('0001-01-01');
+      var db=b.expiry?new Date(b.expiry):new Date('0001-01-01');
+      return db-da;
+    });
+  }
+
+  return data;
+}
+
+/* ------- Render table ------- */
+function render(){
+  var data=getProcessed();
+  var pp=parseInt(document.getElementById('per-page').value)||10;
+  var totalPages=Math.max(1,Math.ceil(data.length/pp));
+  if(state.page>totalPages) state.page=1;
+
+  var start=(state.page-1)*pp;
+  var slice=data.slice(start, start+pp);
+
+  // Update title
+  var typeLabel=state.type||'All Types';
+  document.getElementById('result-title').textContent=
+    data.length+' record'+(data.length!==1?'s':'')+' — '+typeLabel;
+
+  var wrap=document.getElementById('sort-table-wrap');
+
+  if(!data.length){
+    wrap.innerHTML=
+      '<div class="empty-state">'+
+      '<div class="empty-icon" style="font-size:36px;">&#128270;</div>'+
+      '<p>No stock found for this filter.</p></div>';
+    document.getElementById('sort-pagination').innerHTML='';
+    return;
+  }
+
+  var now=new Date();
+  var warnDate=new Date();
+  warnDate.setMonth(warnDate.getMonth()+RP.EXPIRY_WARN_MONTHS);
+
+  var rows=slice.map(function(s,i){
+    var qty=parseInt(s.quantity)||0;
+    var rowNum=start+i+1;
+
+    // Status badge
+    var statusBadge;
+    if(qty===0) statusBadge='<span class="badge badge-muted">Out of Stock</span>';
+    else if(qty<=RP.LOW_STOCK) statusBadge='<span class="badge badge-warn">Low Stock</span>';
+    else statusBadge='<span class="badge badge-success">OK</span>';
+
+    // Expiry display
+    var expDisplay='—';
+    var expStyle='';
+    if(s.expiry){
+      var exp=new Date(s.expiry);
+      expDisplay=RP.fmtDate(s.expiry);
+      if(exp<now) expStyle='color:var(--danger);font-weight:600;';
+      else if(exp<=warnDate) expStyle='color:var(--warn);font-weight:600;';
+    }
+
+    // Qty color
+    var qtyStyle='';
+    if(qty===0) qtyStyle='color:var(--muted);';
+    else if(qty<=RP.LOW_STOCK) qtyStyle='color:var(--warn);font-weight:700;';
+    else qtyStyle='font-weight:600;';
+
+    return '<tr>'+
+      '<td class="mono" style="color:var(--muted);font-size:.8rem;">'+rowNum+'</td>'+
+      '<td><strong>'+s.name+'</strong>'+
+        (s.notes?'<br><span style="font-size:.72rem;color:var(--muted);">'+s.notes+'</span>':'')+
+      '</td>'+
+      '<td><span class="badge badge-info">'+s.medType+'</span></td>'+
+      '<td>'+(s.brand||'—')+'</td>'+
+      '<td class="mono" style="'+qtyStyle+'font-size:.95rem;">'+qty+'</td>'+
+      '<td>'+s.qtyType+'</td>'+
+      '<td style="'+expStyle+'">'+expDisplay+'</td>'+
+      '<td>'+statusBadge+'</td>'+
+    '</tr>';
+  }).join('');
+
+  wrap.innerHTML=
+    '<table>'+
+      '<thead><tr>'+
+        '<th style="width:40px;">#</th>'+
+        '<th>Medicine</th>'+
+        '<th>Type</th>'+
+        '<th>Brand</th>'+
+        '<th>Qty</th>'+
+        '<th>Unit</th>'+
+        '<th>Expiry</th>'+
+        '<th>Status</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>';
+
+  renderPagination(totalPages, data.length, slice.length);
+}
+
+function renderPagination(totalPages, total, sliceLen){
+  var pg=document.getElementById('sort-pagination');
+  if(totalPages<=1){
+    pg.innerHTML='<span class="page-info">Showing all '+total+' records</span>';
+    return;
+  }
+  var html='<span class="page-info">Page '+state.page+' of '+totalPages+' ('+total+' records)</span>';
+  if(state.page>1)
+    html+='<button class="page-btn" onclick="goPage('+(state.page-1)+')">Prev</button>';
+  var s=Math.max(1,state.page-2);
+  var e=Math.min(totalPages,state.page+2);
+  for(var p=s;p<=e;p++){
+    html+='<button class="page-btn'+(p===state.page?' active':'')+'" onclick="goPage('+p+')">'+p+'</button>';
+  }
+  if(state.page<totalPages)
+    html+='<button class="page-btn" onclick="goPage('+(state.page+1)+')">Next</button>';
+  pg.innerHTML=html;
+}
+
+function goPage(p){
+  state.page=p;
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ------- Downloads ------- */
+function downloadCSV(){
+  var data=getProcessed();
+  if(!data.length){ RP.toast('No data to download.','warn'); return; }
+  var headers=['#','Medicine Name','Type','Brand','Quantity','Unit','Expiry Date','Added On','Status'];
+  var csvRows=data.map(function(s,i){
+    var qty=parseInt(s.quantity)||0;
+    var status=qty===0?'Out of Stock':qty<=RP.LOW_STOCK?'Low Stock':'OK';
+    return [
+      i+1,
+      '"'+s.name+'"',
+      '"'+s.medType+'"',
+      '"'+(s.brand||'')+'"',
+      qty,
+      '"'+s.qtyType+'"',
+      '"'+(s.expiry||'')+'"',
+      '"'+(s.addedOn||'')+'"',
+      '"'+status+'"'
+    ].join(',');
+  });
+  var csv=[headers.join(',')].concat(csvRows).join('\n');
+  var bom='\uFEFF'; // UTF-8 BOM for Excel compatibility
+  var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  var sortLabel=state.sort||'unsorted';
+  var typeLabel=state.type?state.type.replace(/\s/g,'-'):'all';
+  a.download='rukmini-stock-'+sortLabel+'-'+typeLabel+'-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  RP.toast('CSV downloaded — '+data.length+' records.','success');
+}
+
+function downloadPrint(){
+  var data=getProcessed();
+  if(!data.length){ RP.toast('No data to print.','warn'); return; }
+
+  var now=new Date();
+  var warnDate=new Date();
+  warnDate.setMonth(warnDate.getMonth()+RP.EXPIRY_WARN_MONTHS);
+
+  var rows=data.map(function(s,i){
+    var qty=parseInt(s.quantity)||0;
+    var status=qty===0?'Out of Stock':qty<=RP.LOW_STOCK?'Low ('+qty+')':'OK';
+    var expLabel=s.expiry||'—';
+    if(s.expiry){
+      var exp=new Date(s.expiry);
+      if(exp<now) expLabel=expLabel+' (Expired)';
+      else if(exp<=warnDate) expLabel=expLabel+' (Near)';
+    }
+    var bg=i%2===0?'#f8fafc':'#fff';
+    return '<tr style="background:'+bg+'">'+
+      '<td>'+( i+1)+'</td>'+
+      '<td><strong>'+s.name+'</strong></td>'+
+      '<td>'+s.medType+'</td>'+
+      '<td>'+(s.brand||'—')+'</td>'+
+      '<td style="text-align:right;font-weight:700;">'+qty+'</td>'+
+      '<td>'+s.qtyType+'</td>'+
+      '<td>'+expLabel+'</td>'+
+      '<td>'+status+'</td>'+
+    '</tr>';
+  }).join('');
+
+  var sortLabel={
+    'qty-asc':'Quantity — Low to High',
+    'qty-desc':'Quantity — High to Low',
+    'exp-asc':'Expiry — Soonest First',
+    'exp-desc':'Expiry — Latest First',
+    '':'No Sort'
+  }[state.sort]||'No Sort';
+
+  var printHtml=
+    '<!DOCTYPE html><html><head><title>Stock Report — Rukmini Pharmacy</title>'+
+    '<style>'+
+      'body{font-family:Arial,sans-serif;font-size:12px;margin:0;padding:16px;color:#111;}'+
+      'h2{margin:0 0 2px;font-size:18px;}'+
+      'p.sub{color:#666;font-size:11px;margin:0 0 14px;}'+
+      'table{width:100%;border-collapse:collapse;}'+
+      'th{background:#1a2535;color:#fff;padding:8px 10px;text-align:left;font-size:11px;}'+
+      'td{padding:7px 10px;border-bottom:1px solid #e8edf5;font-size:11px;}'+
+      'th:nth-child(5),td:nth-child(5){text-align:right;}'+
+      '.footer{margin-top:20px;font-size:10px;color:#999;text-align:center;border-top:1px solid #ddd;padding-top:8px;}'+
+    '</style></head><body>'+
+    '<h2>RUKMINI PHARMACY — Stock Report</h2>'+
+    '<p class="sub">'+
+      'Sort: '+sortLabel+' &nbsp;|&nbsp; '+
+      'Filter: '+(state.type||'All Types')+' &nbsp;|&nbsp; '+
+      'Records: '+data.length+' &nbsp;|&nbsp; '+
+      'Date: '+new Date().toLocaleDateString('en-IN')+
+    '</p>'+
+    '<table>'+
+      '<thead><tr>'+
+        '<th>#</th><th>Medicine</th><th>Type</th><th>Brand</th>'+
+        '<th>Qty</th><th>Unit</th><th>Expiry</th><th>Status</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>'+
+    '<div class="footer">Rukmini Pharmacy — saivenkatachala@gmail.com — Computer Generated Report</div>'+
+    '</body></html>';
+
+  var w=window.open('','_blank','width=900,height=700');
+  if(!w){ RP.toast('Please allow popups to print.','warn'); return; }
+  w.document.open();
+  w.document.write(printHtml);
+  w.document.close();
+  w.onload=function(){ w.print(); };
+}
+
+/* ------- Initial render ------- */
+render();
+</script>
+</body>
+</html>
