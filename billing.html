@@ -11,7 +11,7 @@
   @media(max-width:960px){.bill-layout{grid-template-columns:1fr;}}
 
   .bill-item-row{
-    display:grid;grid-template-columns:2fr 90px 120px 34px;
+    display:grid;grid-template-columns:2fr 80px 110px 34px;
     gap:10px;align-items:end;margin-bottom:10px;
     background:var(--surface2);border:1px solid var(--border);
     border-radius:10px;padding:12px;
@@ -19,15 +19,15 @@
   @media(max-width:640px){
     .bill-item-row{grid-template-columns:1fr 1fr;gap:8px;}
     .bill-item-row .med-sel-wrap{grid-column:1/-1;}
-    .bill-item-row .remove-item{grid-column:2/3;justify-self:end;}
   }
-  .remove-item{
+  .remove-btn{
     background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.25);
     color:var(--danger);border-radius:8px;cursor:pointer;
     width:34px;height:34px;display:flex;align-items:center;justify-content:center;
     font-size:14px;transition:.2s;align-self:flex-end;
   }
-  .remove-item:hover{background:rgba(255,77,109,.25);}
+  .remove-btn:hover{background:rgba(255,77,109,.25);}
+
   .bill-total-bar{
     background:var(--surface2);border:1px solid var(--border);
     border-radius:12px;padding:16px 20px;
@@ -38,17 +38,21 @@
     font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:700;
     background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
   }
+  .profit-preview{
+    font-size:.82rem;padding:4px 10px;border-radius:8px;font-weight:600;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .profit-preview.pos{background:rgba(34,197,94,.1);color:var(--success);}
+  .profit-preview.neg{background:rgba(255,77,109,.1);color:var(--danger);}
+  .profit-preview.zero{background:var(--surface2);color:var(--muted);}
+
   .recent-bill-item{
     border-bottom:1px solid var(--border);padding:11px 0;
-    display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;
   }
   .recent-bill-item:last-child{border-bottom:none;}
 
-  /* =========================================
-     PRINT / PDF BILL STYLES
-     Professional, no gradients, black & white
-     compatible, clean layout
-  ========================================= */
+  /* =========== PRINT BILL =========== */
   #print-bill{display:none;}
   @media print{
     *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
@@ -56,92 +60,46 @@
     #print-bill{display:block!important;margin:0;padding:0;}
     @page{margin:10mm 12mm;size:A4;}
   }
-
-  /* Bill wrapper */
-  .bill-doc{
-    width:100%;max-width:700px;margin:0 auto;
-    font-family:'Helvetica Neue',Arial,sans-serif;
-    font-size:13px;color:#111;background:#fff;
-  }
-
-  /* Header bar — dark, no gradient for PDF compatibility */
-  .bill-doc-header{
-    background:#1a2535;color:#ffffff;
-    padding:20px 28px;
-    border-bottom:3px solid #2d7a6a;
-  }
-  .bill-doc-header-top{
-    display:flex;justify-content:space-between;align-items:flex-start;
-    flex-wrap:wrap;gap:10px;
-  }
-  .bill-doc-pharmacy-name{
-    font-size:20px;font-weight:700;letter-spacing:.3px;margin:0 0 3px;
-  }
-  .bill-doc-sub{font-size:11px;opacity:.75;margin:0;}
-  .bill-doc-header-right{text-align:right;}
-  .bill-doc-bill-no{font-size:17px;font-weight:700;}
-  .bill-doc-date{font-size:11px;opacity:.75;margin-top:2px;}
-
-  /* Info grid */
-  .bill-doc-info{
-    display:grid;grid-template-columns:1fr 1fr;
-    gap:0;border-bottom:1px solid #d0d8e8;
-  }
+  .bill-doc{width:100%;max-width:700px;margin:0 auto;
+    font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#111;background:#fff;}
+  .bill-doc-hdr{background:#1a2535;color:#fff;padding:20px 28px;border-bottom:3px solid #2d7a6a;}
+  .bill-doc-hdr-row{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;}
+  .bill-doc-name{font-size:20px;font-weight:700;letter-spacing:.3px;margin:0 0 3px;}
+  .bill-doc-sub{font-size:11px;opacity:.7;margin:0;}
+  .bill-doc-billno{font-size:17px;font-weight:700;}
+  .bill-doc-date{font-size:11px;opacity:.7;margin-top:2px;}
+  .bill-doc-info{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #d0d8e8;}
   .bill-doc-info-box{padding:14px 20px;border-right:1px solid #d0d8e8;}
   .bill-doc-info-box:last-child{border-right:none;}
-  .bill-doc-info-label{
-    font-size:9px;font-weight:700;text-transform:uppercase;
-    letter-spacing:.12em;color:#777;margin-bottom:5px;
-  }
-  .bill-doc-info-val{font-size:13px;font-weight:600;color:#111;}
-  .bill-doc-info-detail{font-size:11px;color:#555;margin-top:2px;line-height:1.5;}
-
-  /* Table */
-  .bill-doc-table{width:100%;border-collapse:collapse;margin:0;}
-  .bill-doc-table thead tr{background:#1a2535;color:#fff;}
-  .bill-doc-table thead th{
-    padding:9px 14px;text-align:left;font-size:11px;
-    font-weight:600;text-transform:uppercase;letter-spacing:.07em;
-  }
-  .bill-doc-table thead th:nth-child(2),
-  .bill-doc-table thead th:nth-child(3),
-  .bill-doc-table thead th:nth-child(4){text-align:right;}
-  .bill-doc-table tbody tr{border-bottom:1px solid #eaeef5;}
-  .bill-doc-table tbody tr:nth-child(even){background:#f8fafc;}
-  .bill-doc-table tbody td{padding:9px 14px;font-size:12px;vertical-align:middle;}
-  .bill-doc-table tbody td:nth-child(2),
-  .bill-doc-table tbody td:nth-child(3),
-  .bill-doc-table tbody td:nth-child(4){text-align:right;}
-  .bill-doc-table tfoot tr{background:#1a2535;color:#fff;}
-  .bill-doc-table tfoot td{
-    padding:11px 14px;font-size:13px;font-weight:700;
-  }
-  .bill-doc-table tfoot td:last-child{
-    text-align:right;font-size:16px;
-  }
-
-  /* Footer */
-  .bill-doc-footer{
-    border-top:1px solid #d0d8e8;padding:16px 20px;
-  }
-  .bill-doc-sig{
-    display:flex;justify-content:space-between;
-    margin-top:36px;padding:0 10px;
-  }
-  .bill-doc-sig-box{
-    text-align:center;
-    border-top:1px solid #aaa;
-    padding-top:6px;width:150px;
-    font-size:10px;color:#666;
-  }
-  .bill-doc-note{
-    text-align:center;font-size:10px;color:#999;
-    margin-top:16px;border-top:1px dashed #ddd;padding-top:10px;
-  }
-  .bill-doc-bottom-bar{
-    background:#1a2535;color:#8a9ab8;
-    padding:10px 20px;text-align:center;font-size:10px;
-  }
+  .bill-doc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.12em;color:#777;margin-bottom:5px;}
+  .bill-doc-val{font-size:13px;font-weight:600;color:#111;}
+  .bill-doc-detail{font-size:11px;color:#555;margin-top:2px;line-height:1.5;}
+  .bill-doc-tbl{width:100%;border-collapse:collapse;margin:0;}
+  .bill-doc-tbl thead tr{background:#1a2535;color:#fff;}
+  .bill-doc-tbl thead th{padding:9px 14px;text-align:left;font-size:11px;
+    font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
+  .bill-doc-tbl thead th:nth-child(2),
+  .bill-doc-tbl thead th:nth-child(3),
+  .bill-doc-tbl thead th:nth-child(4){text-align:right;}
+  .bill-doc-tbl tbody tr{border-bottom:1px solid #eaeef5;}
+  .bill-doc-tbl tbody tr:nth-child(even){background:#f8fafc;}
+  .bill-doc-tbl tbody td{padding:9px 14px;font-size:12px;vertical-align:middle;}
+  .bill-doc-tbl tbody td:nth-child(2),
+  .bill-doc-tbl tbody td:nth-child(3),
+  .bill-doc-tbl tbody td:nth-child(4){text-align:right;}
+  .bill-doc-tbl tfoot tr{background:#1a2535;color:#fff;}
+  .bill-doc-tbl tfoot td{padding:11px 14px;font-size:13px;font-weight:700;}
+  .bill-doc-tbl tfoot td:last-child{text-align:right;font-size:16px;}
+  .bill-doc-footer{border-top:1px solid #d0d8e8;padding:16px 20px;}
+  .bill-doc-sig{display:flex;justify-content:space-between;
+    margin-top:36px;padding:0 10px;}
+  .bill-doc-sig-box{text-align:center;border-top:1px solid #aaa;
+    padding-top:6px;width:150px;font-size:10px;color:#666;}
+  .bill-doc-note{text-align:center;font-size:10px;color:#999;
+    margin-top:16px;border-top:1px dashed #ddd;padding-top:10px;}
+  .bill-doc-bottom{background:#1a2535;color:#8a9ab8;
+    padding:10px 20px;text-align:center;font-size:10px;}
 </style>
 </head>
 <body>
@@ -149,24 +107,26 @@
   <a href="dashboard.html" class="navbar-brand">
     <div class="brand-icon">&#128138;</div><span>Rukmini Pharmacy</span>
   </a>
-    <div class="navbar-nav">
+  <div class="navbar-nav">
     <a href="dashboard.html" class="nav-link">&#127968; <span class="nav-text">Home</span></a>
     <a href="add-stock.html" class="nav-link">&#10133; <span class="nav-text">Add Stock</span></a>
     <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
     <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
+    <a href="stock-sale.html" class="nav-link">&#128200; <span class="nav-text">Stock Sale</span></a>
     <a href="billing.html" class="nav-link active">&#128451; <span class="nav-text">Bill Generation</span></a>
     <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
-    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
+    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span>
+      <span class="badge" id="alert-badge" style="display:none">0</span></a>
   </div>
   <div class="navbar-right">
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">&#127769;</button>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </nav>
 
 <!-- SUCCESS MODAL -->
 <div class="modal-overlay" id="success-modal">
-  <div class="modal" style="max-width:440px;text-align:center;">
+  <div class="modal" style="max-width:460px;text-align:center;">
     <div style="font-size:48px;margin-bottom:12px;">&#10003;</div>
     <h3 style="margin-bottom:10px;">Bill Generated!</h3>
     <p style="color:var(--muted);margin:0 0 24px;line-height:1.7;" id="success-msg"></p>
@@ -177,20 +137,22 @@
   </div>
 </div>
 
-<!-- HIDDEN PRINT TARGET -->
+<!-- PRINT TARGET -->
 <div id="print-bill"></div>
 
 <div class="page">
 <div class="container">
   <div class="page-header">
     <h1>Bill Generation</h1>
-    <p>Create and print professional patient bills. Stock is auto-deducted on submission.</p>
+    <p>Bills use MRP as selling price. Profit is calculated vs your cost price and saved automatically.</p>
   </div>
+
+  <div id="bill-sync-banner"></div>
 
   <div class="bill-layout">
     <!-- LEFT: FORM -->
     <div>
-      <!-- Patient Details -->
+      <!-- Patient details -->
       <div class="card" style="margin-bottom:16px;">
         <div class="card-header"><span class="card-title">Patient Details</span></div>
         <div class="card-body">
@@ -209,7 +171,7 @@
             </div>
             <div class="field">
               <label>Age *</label>
-              <input type="number" id="b-age" min="1" max="120" placeholder="Age in years"/>
+              <input type="number" id="b-age" min="1" max="120" placeholder="Years"/>
             </div>
             <div class="field">
               <label>Bill Date</label>
@@ -230,21 +192,28 @@
           <button class="btn btn-sm btn-secondary" onclick="addBillRow()">+ Add Row</button>
         </div>
         <div class="card-body">
-          <div style="display:grid;grid-template-columns:2fr 90px 120px 34px;gap:10px;
-            padding:0 0 8px;font-size:.72rem;font-weight:600;color:var(--muted);
+          <div style="display:grid;grid-template-columns:2fr 80px 110px 34px;gap:10px;
+            padding:0 0 8px;font-size:.71rem;font-weight:600;color:var(--muted);
             text-transform:uppercase;letter-spacing:.06em;">
-            <span>Medicine</span><span>Qty</span><span>Unit Cost (Rs)</span><span></span>
+            <span>Medicine (MRP auto-filled)</span>
+            <span>Qty</span>
+            <span>Unit Price (Rs)</span>
+            <span></span>
           </div>
           <div id="bill-items-area"></div>
 
+          <!-- Totals bar -->
           <div class="bill-total-bar">
             <div>
               <div style="font-size:.75rem;color:var(--muted);font-weight:600;
-                text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Total Amount</div>
+                text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">
+                Total (MRP basis)
+              </div>
               <div class="total-amount" id="total-display">Rs. 0.00</div>
             </div>
-            <div style="text-align:right;">
-              <div style="font-size:.8rem;color:var(--muted);" id="items-count">0 items</div>
+            <div style="text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+              <span style="font-size:.78rem;color:var(--muted);" id="items-count">0 items</span>
+              <span class="profit-preview zero" id="profit-preview">Profit: Rs. 0.00</span>
             </div>
           </div>
 
@@ -280,6 +249,17 @@
 <script>
 RP.guard();
 RP.applyTheme();
+
+// ---- Local date helper ----
+function localDateStr(d){
+  var dt=d?new Date(d):new Date();
+  var y=dt.getFullYear();
+  var m=String(dt.getMonth()+1).padStart(2,'0');
+  var day=String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+
+
 function logout(){ sessionStorage.removeItem('rp_auth'); window.location.href='index.html'; }
 function toggleTheme(){
   var t=RP.getTheme()==='dark'?'light':'dark';
@@ -295,37 +275,43 @@ function updateBadge(){
   b.textContent=a.length;
 }
 updateBadge();
-// Register re-render callback for when sync completes
-window._rpOnSyncComplete = function(){ renderRecentBills(); addBillRow && addBillRow(); };
+
+window._rpOnSyncComplete=function(){ renderRecentBills(); };
 RP.showSyncBanner('bill-sync-banner');
 
-
-// Set today's date
-document.getElementById('b-date').value=new Date().toISOString().slice(0,10);
+document.getElementById('b-date').value=localDateStr();
 
 var billRowIds=[];
 var currentBillData=null;
 
+/* ---- Medicine dropdown options ---- */
 function getMedOptions(){
   return RP.getStock()
     .filter(function(s){ return parseInt(s.quantity)>0; })
     .map(function(s){
-      var label=s.name+(s.brand?' ('+s.brand+')':'')+' — '+s.quantity+' '+s.qtyType;
-      return '<option value="'+s.id+'" data-name="'+s.name+
-        '" data-brand="'+(s.brand||'')+'" data-type="'+s.medType+
-        '" data-qty="'+s.quantity+'" data-qtytype="'+s.qtyType+'">'+label+'</option>';
+      var mrp=parseFloat(s.mrp||s.mrpPerUnit||0);
+      var cost=parseFloat(s.costPrice||s.costPricePerUnit||0);
+      var label=s.name+(s.brand?' ('+s.brand+')':'')+
+        ' — '+s.quantity+' '+s.qtyType+
+        (mrp>0?' | MRP:Rs.'+mrp.toFixed(2):'');
+      return '<option value="'+s.id+'"'+
+        ' data-name="'+esc(s.name)+'"'+
+        ' data-brand="'+esc(s.brand||'')+'"'+
+        ' data-type="'+esc(s.medType)+'"'+
+        ' data-qty="'+s.quantity+'"'+
+        ' data-qtytype="'+esc(s.qtyType)+'"'+
+        ' data-mrp="'+mrp+'"'+
+        ' data-cost="'+cost+'">'+
+        label+'</option>';
     }).join('');
 }
 
+/* ---- Add a medicine row ---- */
 function addBillRow(){
-  var id='row_'+RP.uid();
-  billRowIds.push(id);
-  var area=document.getElementById('bill-items-area');
   var opts=getMedOptions();
-  if(!opts){
-    RP.toast('No stock available. Please add stock first.','warn');
-    return;
-  }
+  if(!opts){ RP.toast('No stock available. Add stock first.','warn'); return; }
+  var id='br_'+RP.uid();
+  billRowIds.push(id);
   var div=document.createElement('div');
   div.className='bill-item-row';
   div.id=id;
@@ -336,148 +322,200 @@ function addBillRow(){
       '</select>'+
     '</div>'+
     '<div class="field" style="min-width:0;">'+
-      '<input type="number" min="1" value="1" placeholder="Qty"'+
-        ' oninput="checkQtyLimit(this);updateTotal()" style="font-size:.85rem;padding:9px 10px;"/>'+
+      '<input type="number" min="1" value="" placeholder="0"'+
+        ' oninput="checkMaxQty(this);updateTotals()" style="font-size:.85rem;padding:9px 10px;"/>'+
     '</div>'+
     '<div class="field" style="min-width:0;">'+
       '<input type="number" min="0" step="0.01" placeholder="0.00"'+
-        ' oninput="updateTotal()" style="font-size:.85rem;padding:9px 10px;"/>'+
+        ' oninput="updateTotals()" style="font-size:.85rem;padding:9px 10px;"/>'+
     '</div>'+
-    '<button class="remove-item" onclick="removeRow(\''+id+'\')" title="Remove">x</button>';
-  area.appendChild(div);
-  updateTotal();
+    '<button class="remove-btn" onclick="removeRow(\''+id+'\')" title="Remove">&#10005;</button>';
+  document.getElementById('bill-items-area').appendChild(div);
+  updateTotals();
 }
 
+/* ---- When medicine is selected — auto-fill MRP ---- */
 function onMedSelect(sel){
   var opt=sel.selectedOptions[0];
   if(!opt||!opt.value) return;
-  var availQty=parseInt(opt.getAttribute('data-qty'))||0;
   var row=sel.closest('.bill-item-row');
-  var qtyInput=row.querySelectorAll('input[type="number"]')[0];
+  var inputs=row.querySelectorAll('input[type="number"]');
+  var qtyInput=inputs[0];
+  var priceInput=inputs[1];
+  var availQty=parseInt(opt.getAttribute('data-qty'))||0;
+  var mrp=parseFloat(opt.getAttribute('data-mrp'))||0;
+  // Enforce max
   qtyInput.max=availQty;
-  qtyInput.title='Max available: '+availQty;
-  updateTotal();
+  qtyInput.title='Max: '+availQty+' '+opt.getAttribute('data-qtytype');
+  // Auto-fill MRP as unit price
+  if(mrp>0) priceInput.value=mrp.toFixed(2);
+  updateTotals();
 }
 
-function checkQtyLimit(input){
-  var max=parseInt(input.max)||9999;
+function checkMaxQty(input){
+  var max=parseInt(input.max)||99999;
   var val=parseInt(input.value)||0;
-  if(val>max){
-    input.value=max;
-    RP.toast('Max available stock is '+max,'warn');
-  }
+  if(val>max){ input.value=max; RP.toast('Max available: '+max,'warn'); }
   if(val<1) input.value=1;
 }
 
 function removeRow(id){
-  billRowIds=billRowIds.filter(function(r){ return r!==id; });
+  billRowIds=billRowIds.filter(function(r){return r!==id;});
   var el=document.getElementById(id);
   if(el) el.remove();
-  updateTotal();
+  updateTotals();
 }
 
-function updateTotal(){
-  var total=0, count=0;
+/* ---- Calculate totals AND profit preview ---- */
+function updateTotals(){
+  var total=0, profit=0, count=0;
   document.querySelectorAll('.bill-item-row').forEach(function(row){
+    var sel=row.querySelector('select');
     var inputs=row.querySelectorAll('input[type="number"]');
     var qty=parseFloat(inputs[0]?inputs[0].value:0)||0;
-    var cost=parseFloat(inputs[1]?inputs[1].value:0)||0;
-    total+=qty*cost;
-    if(row.querySelector('select')&&row.querySelector('select').value) count++;
+    var price=parseFloat(inputs[1]?inputs[1].value:0)||0;
+    if(sel&&sel.value&&qty>0){
+      count++;
+      var lineTotal=qty*price;
+      total+=lineTotal;
+      // Profit = (selling price - cost price) * qty
+      var costPerUnit=parseFloat(sel.selectedOptions[0]?sel.selectedOptions[0].getAttribute('data-cost'):0)||0;
+      profit+=(price-costPerUnit)*qty;
+    }
   });
   document.getElementById('total-display').textContent='Rs. '+total.toFixed(2);
   document.getElementById('items-count').textContent=count+' item'+(count!==1?'s':'');
+  // Profit preview
+  var pp=document.getElementById('profit-preview');
+  pp.textContent='Profit: '+(profit>=0?'+':'')+'Rs. '+profit.toFixed(2);
+  pp.className='profit-preview '+(profit>0?'pos':profit<0?'neg':'zero');
 }
 
+/* ---- Get all bill items ---- */
 function getBillItems(){
   var items=[];
   document.querySelectorAll('.bill-item-row').forEach(function(row){
     var sel=row.querySelector('select');
     var inputs=row.querySelectorAll('input[type="number"]');
     var qty=parseFloat(inputs[0]?inputs[0].value:0)||0;
-    var cost=parseFloat(inputs[1]?inputs[1].value:0)||0;
+    var price=parseFloat(inputs[1]?inputs[1].value:0)||0;
     if(!sel||!sel.value||qty<=0) return;
     var opt=sel.selectedOptions[0];
+    var costPerUnit=parseFloat(opt?opt.getAttribute('data-cost'):0)||0;
     items.push({
-      medId: sel.value,
-      qty: qty,
-      cost: cost,
-      subtotal: parseFloat((qty*cost).toFixed(2)),
-      medName: opt?opt.getAttribute('data-name'):'',
+      medId:    sel.value,
+      qty:      qty,
+      cost:     price,      // selling price (MRP based) used for bill total
+      subtotal: parseFloat((qty*price).toFixed(2)),
+      medName:  opt?opt.getAttribute('data-name'):'',
       medBrand: opt?opt.getAttribute('data-brand'):'',
-      medType: opt?opt.getAttribute('data-type'):'',
-      qtyType: opt?opt.getAttribute('data-qtytype'):''
+      medType:  opt?opt.getAttribute('data-type'):'',
+      qtyType:  opt?opt.getAttribute('data-qtytype'):'',
+      // Cost price (for profit only — not shown on bill)
+      costPricePerUnit: costPerUnit,
+      profitOnLine: parseFloat(((price-costPerUnit)*qty).toFixed(2))
     });
   });
   return items;
 }
 
+/* ---- Submit bill ---- */
 function submitBill(){
-  var name=document.getElementById('b-name').value.trim();
-  var phone=document.getElementById('b-phone').value.trim();
-  var email=document.getElementById('b-email').value.trim();
-  var age=document.getElementById('b-age').value.trim();
-  var date=document.getElementById('b-date').value;
-  var doctor=document.getElementById('b-doctor').value.trim();
-  var items=getBillItems();
+  var name   = document.getElementById('b-name').value.trim();
+  var phone  = document.getElementById('b-phone').value.trim();
+  var email  = document.getElementById('b-email').value.trim();
+  var age    = document.getElementById('b-age').value.trim();
+  var date   = document.getElementById('b-date').value;
+  var doctor = document.getElementById('b-doctor').value.trim();
+  var items  = getBillItems();
 
-  if(!name){ RP.toast('Enter patient name.','error'); return; }
-  if(!phone){ RP.toast('Enter patient phone number.','error'); return; }
-  if(!age){ RP.toast('Enter patient age.','error'); return; }
-  if(!items.length){ RP.toast('Add at least one medicine item.','error'); return; }
-  var hasNoCost=items.some(function(i){ return i.cost<=0; });
-  if(hasNoCost){ RP.toast('Enter unit cost for all medicines.','error'); return; }
+  if(!name)  { RP.toast('Enter patient name.','error'); return; }
+  if(!phone) { RP.toast('Enter patient phone number.','error'); return; }
+  if(!age)   { RP.toast('Enter patient age.','error'); return; }
+  if(!items.length) { RP.toast('Add at least one medicine.','error'); return; }
+  if(items.some(function(i){return i.cost<=0;})){
+    RP.toast('Enter price for all medicines.','error'); return;
+  }
 
-  var total=parseFloat(items.reduce(function(s,i){ return s+i.subtotal; },0).toFixed(2));
-  var billCount=RP.getBills().length+1;
-  var billNo='RP-'+new Date().getFullYear()+'-'+String(billCount).padStart(4,'0');
+  var total      = parseFloat(items.reduce(function(s,i){return s+i.subtotal;},0).toFixed(2));
+  var totalProfit= parseFloat(items.reduce(function(s,i){return s+i.profitOnLine;},0).toFixed(2));
+  var billNo     = 'RP-'+new Date().getFullYear()+'-'+String(RP.getBills().length+1).padStart(4,'0');
 
   var bill={
-    id: RP.uid(),
-    billNo: billNo,
+    id:          RP.uid(),
+    billNo:      billNo,
     patientName: name,
-    patientPhone: phone,
-    patientEmail: email,
-    age: age,
-    date: date,
-    doctor: doctor,
-    items: items,
-    total: total,
-    createdOn: new Date().toISOString()
+    patientPhone:phone,
+    patientEmail:email,
+    age:         age,
+    date:        date,
+    doctor:      doctor,
+    items:       items,
+    total:       total,
+    totalProfit: totalProfit,
+    createdOn:   new Date().toISOString()
   };
 
-  // Save bill
+  // ── 1. Save bill ──
   var bills=RP.getBills();
   bills.push(bill);
   RP.saveBills(bills);
 
-  // AUTO-DEDUCT STOCK
+  // ── 2. Deduct stock ──
   var stock=RP.getStock();
   items.forEach(function(item){
-    var idx=stock.findIndex(function(s){ return s.id===item.medId; });
+    var idx=stock.findIndex(function(s){return s.id===item.medId;});
     if(idx!==-1){
-      var newQty=Math.max(0,(parseInt(stock[idx].quantity)||0)-item.qty);
-      stock[idx].quantity=newQty;
+      stock[idx].quantity=Math.max(0,(parseInt(stock[idx].quantity)||0)-item.qty);
     }
   });
   RP.saveStock(stock);
 
-  // Sync to Google Sheets
+  // ── 3. Record EACH item as a sale entry in RP_SALES for profit tracking ──
+  if(typeof RP_SALES !== 'undefined'){
+    items.forEach(function(item){
+      var saleEntry={
+        id:                RP.uid(),
+        stockId:           item.medId,
+        medicineName:      item.medName,
+        qtyType:           item.qtyType,
+        qtySold:           item.qty,
+        costPricePerUnit:  item.costPricePerUnit,
+        mrpPerUnit:        item.cost,        // the price charged on bill
+        sellingPricePerUnit:item.cost,
+        discountPct:       0,
+        totalCost:         parseFloat((item.costPricePerUnit*item.qty).toFixed(2)),
+        totalSelling:      item.subtotal,
+        profit:            item.profitOnLine,
+        date:              date||localDateStr(),
+        createdOn:         new Date().toISOString(),
+        source:            'billing'         // distinguishes from direct stock sale
+      };
+      RP_SALES.add(saleEntry, true); // billing already deducted stock above
+    });
+  }
+
+  // ── 4. Sync to Google Sheets ──
   RP.postToSheet({action:'addBill', data:bill});
 
-  // Build print bill
+  // ── 5. Build print bill ──
   currentBillData=bill;
   buildPrintBill(bill);
 
-  var emailLine=email?'<br><span style="font-size:.8rem;color:var(--muted)">Bill sent to: '+email+'</span>':'';
+  var profitLine='<br><span style="font-size:.8rem;color:'+(totalProfit>=0?'var(--success)':'var(--danger)')+';">'+
+    'Profit on this bill: '+(totalProfit>=0?'+':'')+'Rs.'+totalProfit.toFixed(2)+'</span>';
+  var emailLine=email?'<br><span style="font-size:.78rem;color:var(--muted)">Sending bill to: '+email+'</span>':'';
+
   document.getElementById('success-msg').innerHTML=
     'Bill <strong>'+billNo+'</strong> for <strong>'+name+'</strong><br>'+
     'Phone: '+phone+'<br>'+
-    'Total: <strong style="color:var(--accent)">Rs. '+total.toFixed(2)+'</strong>'+emailLine;
+    'Total: <strong style="color:var(--accent)">Rs. '+total.toFixed(2)+'</strong>'+
+    profitLine+emailLine;
+
   document.getElementById('success-modal').classList.add('open');
   renderRecentBills();
   updateBadge();
-  RP.toast('Stock auto-updated for '+items.length+' item(s).','info');
+  RP.toast('Bill saved. Stock reduced. Profit recorded.','success');
 }
 
 function closeSuccess(){
@@ -489,29 +527,29 @@ function resetBill(){
   ['b-name','b-phone','b-email','b-age','b-doctor'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
-  document.getElementById('b-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('b-date').value=localDateStr();
   document.getElementById('bill-items-area').innerHTML='';
   billRowIds=[];
   document.getElementById('total-display').textContent='Rs. 0.00';
   document.getElementById('items-count').textContent='0 items';
+  document.getElementById('profit-preview').textContent='Profit: Rs. 0.00';
+  document.getElementById('profit-preview').className='profit-preview zero';
   currentBillData=null;
   addBillRow();
 }
 
-/* ================================================
-   PROFESSIONAL PRINT BILL BUILDER
-   Clean, professional, A4, no emoji, no gradients
-   Works perfectly as PDF via browser Print dialog
-================================================ */
+/* ============================================================
+   PROFESSIONAL PRINT BILL
+============================================================ */
 function buildPrintBill(bill){
   var rowsHtml=bill.items.map(function(item,i){
-    var bg=i%2===0?'#f8fafc':'#ffffff';
+    var bg=i%2===0?'#f8fafc':'#fff';
     return '<tr style="background:'+bg+'">'+
       '<td style="padding:9px 14px;">'+
-        '<span style="font-weight:600;">'+item.medName+'</span>'+
-        (item.medBrand?'<br><span style="font-size:11px;color:#777;">'+item.medBrand+'</span>':'')+
+        '<span style="font-weight:600;">'+esc(item.medName)+'</span>'+
+        (item.medBrand?'<br><span style="font-size:11px;color:#777;">'+esc(item.medBrand)+'</span>':'')+
       '</td>'+
-      '<td style="padding:9px 14px;text-align:right;">'+item.qty+' '+item.qtyType+'</td>'+
+      '<td style="padding:9px 14px;text-align:right;">'+item.qty+' '+esc(item.qtyType||'')+'</td>'+
       '<td style="padding:9px 14px;text-align:right;">Rs. '+parseFloat(item.cost).toFixed(2)+'</td>'+
       '<td style="padding:9px 14px;text-align:right;font-weight:700;">Rs. '+item.subtotal.toFixed(2)+'</td>'+
     '</tr>';
@@ -519,15 +557,15 @@ function buildPrintBill(bill){
 
   var html=
   '<div class="bill-doc">'+
-    '<div class="bill-doc-header">'+
-      '<div class="bill-doc-header-top">'+
+    '<div class="bill-doc-hdr">'+
+      '<div class="bill-doc-hdr-row">'+
         '<div>'+
-          '<div class="bill-doc-pharmacy-name">RUKMINI PHARMACY</div>'+
+          '<div class="bill-doc-name">RUKMINI PHARMACY</div>'+
           '<div class="bill-doc-sub">Authorised Pharmaceutical Retailer</div>'+
-          '<div class="bill-doc-sub" style="margin-top:4px;">Email: saivenkatachala@gmail.com</div>'+
+          '<div class="bill-doc-sub" style="margin-top:3px;">Email: saivenkatachala@gmail.com</div>'+
         '</div>'+
-        '<div class="bill-doc-header-right">'+
-          '<div class="bill-doc-bill-no">'+bill.billNo+'</div>'+
+        '<div style="text-align:right;">'+
+          '<div class="bill-doc-billno">'+esc(bill.billNo)+'</div>'+
           '<div class="bill-doc-date">Date: '+RP.fmtDate(bill.date)+'</div>'+
         '</div>'+
       '</div>'+
@@ -535,41 +573,37 @@ function buildPrintBill(bill){
 
     '<div class="bill-doc-info">'+
       '<div class="bill-doc-info-box">'+
-        '<div class="bill-doc-info-label">Billed To</div>'+
-        '<div class="bill-doc-info-val">'+bill.patientName+'</div>'+
-        '<div class="bill-doc-info-detail">'+
-          'Phone: '+bill.patientPhone+'<br>'+
-          'Age: '+bill.age+' years'+
-          (bill.patientEmail?'<br>Email: '+bill.patientEmail:'')+
+        '<div class="bill-doc-lbl">Billed To</div>'+
+        '<div class="bill-doc-val">'+esc(bill.patientName)+'</div>'+
+        '<div class="bill-doc-detail">'+
+          'Phone: '+esc(bill.patientPhone||'-')+'<br>'+
+          'Age: '+esc(String(bill.age))+' years'+
+          (bill.patientEmail?'<br>Email: '+esc(bill.patientEmail):'')+
         '</div>'+
       '</div>'+
       '<div class="bill-doc-info-box">'+
-        '<div class="bill-doc-info-label">Pharmacy Details</div>'+
-        '<div class="bill-doc-info-val">Rukmini Pharmacy</div>'+
-        '<div class="bill-doc-info-detail">'+
-          (bill.doctor?'Prescribed by: Dr. '+bill.doctor+'<br>':'')+
-          'Ref No: '+bill.billNo+'<br>'+
+        '<div class="bill-doc-lbl">Pharmacy Details</div>'+
+        '<div class="bill-doc-val">Rukmini Pharmacy</div>'+
+        '<div class="bill-doc-detail">'+
+          (bill.doctor?'Prescribed by: Dr. '+esc(bill.doctor)+'<br>':'')+
+          'Ref No: '+esc(bill.billNo)+'<br>'+
           'Date: '+RP.fmtDate(bill.date)+
         '</div>'+
       '</div>'+
     '</div>'+
 
-    '<table class="bill-doc-table">'+
-      '<thead>'+
-        '<tr>'+
-          '<th style="width:45%">Medicine</th>'+
-          '<th style="text-align:right">Quantity</th>'+
-          '<th style="text-align:right">Unit Price</th>'+
-          '<th style="text-align:right">Amount</th>'+
-        '</tr>'+
-      '</thead>'+
+    '<table class="bill-doc-tbl">'+
+      '<thead><tr>'+
+        '<th style="width:42%">Medicine</th>'+
+        '<th style="text-align:right">Quantity</th>'+
+        '<th style="text-align:right">Unit Price</th>'+
+        '<th style="text-align:right">Amount</th>'+
+      '</tr></thead>'+
       '<tbody>'+rowsHtml+'</tbody>'+
-      '<tfoot>'+
-        '<tr>'+
-          '<td colspan="3" style="text-align:right;letter-spacing:.05em;font-size:12px;">TOTAL AMOUNT</td>'+
-          '<td style="text-align:right;font-size:16px;">Rs. '+bill.total.toFixed(2)+'</td>'+
-        '</tr>'+
-      '</tfoot>'+
+      '<tfoot><tr>'+
+        '<td colspan="3" style="text-align:right;letter-spacing:.05em;font-size:12px;">TOTAL AMOUNT</td>'+
+        '<td style="text-align:right;font-size:16px;">Rs. '+bill.total.toFixed(2)+'</td>'+
+      '</tr></tfoot>'+
     '</table>'+
 
     '<div class="bill-doc-footer">'+
@@ -577,15 +611,9 @@ function buildPrintBill(bill){
         '<div class="bill-doc-sig-box">Patient Signature</div>'+
         '<div class="bill-doc-sig-box">Pharmacist Signature</div>'+
       '</div>'+
-      '<div class="bill-doc-note">'+
-        'This is a computer generated bill. '+
-        'Thank you for choosing Rukmini Pharmacy.'+
-      '</div>'+
+      '<div class="bill-doc-note">Computer generated bill. Thank you for choosing Rukmini Pharmacy.</div>'+
     '</div>'+
-
-    '<div class="bill-doc-bottom-bar">'+
-      'Rukmini Pharmacy  |  saivenkatachala@gmail.com'+
-    '</div>'+
+    '<div class="bill-doc-bottom">Rukmini Pharmacy &nbsp;|&nbsp; saivenkatachala@gmail.com</div>'+
   '</div>';
 
   document.getElementById('print-bill').innerHTML=html;
@@ -596,6 +624,7 @@ function printCurrentBill(){
   window.print();
 }
 
+/* ---- Recent bills list ---- */
 function renderRecentBills(){
   var bills=[].concat(RP.getBills()).reverse().slice(0,10);
   document.getElementById('bill-count').textContent=RP.getBills().length+' total';
@@ -605,14 +634,23 @@ function renderRecentBills(){
     return;
   }
   list.innerHTML=bills.map(function(b){
+    var profit=parseFloat(b.totalProfit||0);
+    var profitColor=profit>0?'var(--success)':profit<0?'var(--danger)':'var(--muted)';
     return '<div class="recent-bill-item">'+
       '<div style="min-width:0;flex:1;">'+
-        '<div style="font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+b.patientName+'</div>'+
-        '<div style="color:var(--muted);font-size:.74rem;">'+b.billNo+' · '+RP.fmtDate(b.date)+'</div>'+
-        '<div style="color:var(--muted);font-size:.74rem;">'+(b.patientPhone||'')+'</div>'+
+        '<div style="font-weight:600;font-size:.88rem;">'+esc(b.patientName)+'</div>'+
+        '<div style="color:var(--muted);font-size:.74rem;">'+
+          esc(b.billNo)+' &middot; '+RP.fmtDate(b.date)+
+          ' &middot; '+(b.patientPhone||'')+
+        '</div>'+
+        '<div style="font-size:.73rem;color:'+profitColor+';font-weight:600;">'+
+          'Profit: '+(profit>=0?'+':'')+'Rs.'+profit.toFixed(2)+
+        '</div>'+
       '</div>'+
-      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">'+
-        '<span style="font-weight:700;color:var(--accent);font-size:.9rem;white-space:nowrap;">Rs.'+parseFloat(b.total).toFixed(2)+'</span>'+
+      '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'+
+        '<span style="font-weight:700;color:var(--accent);font-size:.88rem;white-space:nowrap;">'+
+          'Rs.'+parseFloat(b.total).toFixed(2)+
+        '</span>'+
         '<button class="btn btn-sm btn-secondary" title="Reprint" onclick="reprintBill(\''+b.id+'\')">Print</button>'+
       '</div>'+
     '</div>';
@@ -620,11 +658,15 @@ function renderRecentBills(){
 }
 
 function reprintBill(id){
-  var bill=RP.getBills().find(function(b){ return b.id===id; });
+  var bill=RP.getBills().find(function(b){return b.id===id;});
   if(!bill) return;
   currentBillData=bill;
   buildPrintBill(bill);
   setTimeout(function(){ window.print(); },150);
+}
+
+function esc(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // Init

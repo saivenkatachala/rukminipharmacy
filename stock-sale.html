@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Stock Sale — Rukmini Pharmacy</title>
+<link rel="icon" href="pp.png">
+<link rel="stylesheet" href="rp-styles.css"/>
+<style>
+  .sale-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;}
+  @media(max-width:960px){.sale-layout{grid-template-columns:1fr;}}
+
+  .price-breakdown{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:12px;padding:16px 20px;margin-top:14px;
+  }
+  .pb-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:6px 0;border-bottom:1px solid var(--border);font-size:.88rem;
+  }
+  .pb-row:last-child{border-bottom:none;padding-top:10px;margin-top:2px;}
+  .pb-row .label{color:var(--muted);}
+  .pb-row .value{font-weight:600;font-family:'JetBrains Mono',monospace;}
+  .pb-row.profit-row .value{color:var(--success);font-size:1.1rem;}
+  .pb-row.profit-row.loss .value{color:var(--danger);}
+  .pb-row.total-row{font-weight:700;font-size:.95rem;}
+  .pb-row.total-row .label{color:var(--text);}
+
+  .profit-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 12px;border-radius:20px;font-size:.8rem;font-weight:700;
+  }
+  .profit-badge.pos{background:rgba(34,197,94,.12);color:var(--success);}
+  .profit-badge.neg{background:rgba(255,77,109,.12);color:var(--danger);}
+  .profit-badge.zero{background:var(--surface2);color:var(--muted);}
+
+  .sale-history-item{
+    border-bottom:1px solid var(--border);padding:11px 0;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;
+  }
+  .sale-history-item:last-child{border-bottom:none;}
+
+  .profit-summary-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;
+  }
+  .profit-card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:18px 20px;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .profit-card .pc-label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  .profit-card .pc-val{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;}
+  .profit-card .pc-sub{font-size:.78rem;color:var(--muted);}
+
+  .filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .disc-preview{font-size:.82rem;color:var(--success);margin-top:4px;display:none;}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="dashboard.html" class="navbar-brand">
+    <div class="brand-icon">&#128138;</div><span>Rukmini Pharmacy</span>
+  </a>
+  <div class="navbar-nav">
+    <a href="dashboard.html" class="nav-link">&#127968; <span class="nav-text">Home</span></a>
+    <a href="add-stock.html" class="nav-link">&#10133; <span class="nav-text">Add Stock</span></a>
+    <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
+    <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
+    <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
+    <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
+    <a href="stock-sale.html" class="nav-link active">&#128200; <span class="nav-text">Stock Sale</span></a>
+    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span>
+      <span class="badge" id="alert-badge" style="display:none">0</span></a>
+  </div>
+  <div class="navbar-right">
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<!-- SUCCESS POPUP -->
+<div class="popup-overlay" id="sale-success-popup">
+  <div class="popup-box">
+    <div class="popup-icon">&#10003;</div>
+    <div class="popup-title">Sale Recorded!</div>
+    <div class="popup-msg" id="sale-success-msg"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="closeSaleSuccess()">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+<div class="container">
+
+  <div class="page-header">
+    <h1>Stock Sale</h1>
+    <p>Record stock sold from inventory. Profit is calculated from your cost price, not MRP.</p>
+  </div>
+
+  <div id="sale-sync-banner"></div>
+
+  <!-- Profit Summary Cards -->
+  <div class="profit-summary-grid" id="profit-summary">
+    <!-- built by JS -->
+  </div>
+
+  <div class="sale-layout">
+    <!-- LEFT: SALE FORM -->
+    <div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Record a Sale</span></div>
+        <div class="card-body">
+
+          <div class="form-grid form-grid-2">
+
+            <!-- Medicine selector -->
+            <div class="field" style="grid-column:1/-1;">
+              <label>Medicine *</label>
+              <select id="s-medicine" onchange="onMedicineSelect()" required>
+                <option value="">-- Select Medicine --</option>
+              </select>
+              <p class="hint" id="s-stock-hint"></p>
+            </div>
+
+            <!-- Quantity Type (read from stock) -->
+            <div class="field">
+              <label>Quantity Type</label>
+              <input type="text" id="s-qtyType" readonly
+                style="background:var(--surface2);opacity:.7;cursor:not-allowed;"/>
+            </div>
+
+            <!-- Quantity sold -->
+            <div class="field">
+              <label>Quantity Sold *</label>
+              <input type="number" id="s-qty" min="1" placeholder="0"
+                oninput="recalcSale()"/>
+            </div>
+
+            <!-- Discount % -->
+            <div class="field">
+              <label>Discount % on MRP</label>
+              <input type="number" id="s-discount" min="0" max="100" step="0.1"
+                placeholder="0" oninput="recalcSale()"/>
+              <p class="hint disc-preview" id="disc-preview"></p>
+            </div>
+
+            <!-- Date -->
+            <div class="field">
+              <label>Sale Date</label>
+              <input type="date" id="s-date"/>
+            </div>
+
+          </div>
+
+          <!-- Price breakdown -->
+          <div class="price-breakdown" id="price-breakdown" style="display:none;">
+            <p style="font-size:.78rem;font-weight:700;color:var(--muted);
+              text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;">
+              Price Breakdown
+            </p>
+
+            <div class="pb-row">
+              <span class="label">Cost Price / Unit</span>
+              <span class="value" id="pb-cost-unit" style="color:var(--warn);">Rs. 0.00</span>
+            </div>
+            <div class="pb-row">
+              <span class="label">MRP / Unit</span>
+              <span class="value" id="pb-mrp-unit" style="color:var(--accent2);">Rs. 0.00</span>
+            </div>
+            <div class="pb-row">
+              <span class="label">Discount on MRP</span>
+              <span class="value" id="pb-discount">0 %</span>
+            </div>
+            <div class="pb-row">
+              <span class="label">Selling Price / Unit (after discount)</span>
+              <span class="value" id="pb-sell-unit">Rs. 0.00</span>
+            </div>
+            <div class="pb-row">
+              <span class="label">Quantity</span>
+              <span class="value" id="pb-qty">0</span>
+            </div>
+            <div class="pb-row total-row">
+              <span class="label">Total Selling Price</span>
+              <span class="value" id="pb-total-sell">Rs. 0.00</span>
+            </div>
+            <div class="pb-row total-row">
+              <span class="label">Total Cost Price</span>
+              <span class="value" style="color:var(--warn);" id="pb-total-cost">Rs. 0.00</span>
+            </div>
+            <div class="pb-row profit-row" id="pb-profit-row">
+              <span class="label">Profit on this Sale</span>
+              <span class="value" id="pb-profit">Rs. 0.00</span>
+            </div>
+          </div>
+
+          <div class="flex-end" style="margin-top:18px;">
+            <button class="btn btn-secondary" onclick="resetSaleForm()">Reset</button>
+            <button class="btn btn-primary" onclick="submitSale()">Record Sale</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: SALE HISTORY -->
+    <div>
+      <div class="card" style="position:sticky;top:84px;">
+        <div class="card-header">
+          <span class="card-title">Sale History</span>
+          <span id="sale-count" style="color:var(--muted);font-size:.8rem;"></span>
+        </div>
+        <div class="card-body">
+          <!-- Filter row -->
+          <div class="filter-row">
+            <select id="hist-filter" onchange="renderHistory()"
+              style="background:var(--surface2);border:1px solid var(--border);
+              border-radius:8px;color:var(--text);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:.83rem;">
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="all">All Time</option>
+            </select>
+            <button class="btn btn-sm btn-secondary" onclick="downloadSalesCSV()">
+              Download CSV
+            </button>
+          </div>
+          <div id="sale-history-list" style="max-height:500px;overflow-y:auto;">
+            <div class="empty-state">
+              <div class="empty-icon" style="font-size:36px;">&#128200;</div>
+              <p>No sales recorded yet.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="rp-core.js"></script>
+<script>
+RP.guard();
+RP.applyTheme();
+
+// ---- Local date helper (avoids UTC timezone shift) ----
+function localDateStr(d){
+  var dt=d?new Date(d):new Date();
+  var y=dt.getFullYear();
+  var m=String(dt.getMonth()+1).padStart(2,'0');
+  var day=String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+
+
+function logout(){ sessionStorage.removeItem('rp_auth'); window.location.href='index.html'; }
+function toggleTheme(){
+  var t=RP.getTheme()==='dark'?'light':'dark';
+  RP.setTheme(t);
+  document.getElementById('theme-btn').innerHTML=t==='dark'?'&#127769;':'&#9728;';
+}
+document.getElementById('theme-btn').innerHTML=RP.getTheme()==='dark'?'&#127769;':'&#9728;';
+
+function updateBadge(){
+  var a=RP.computeAlerts();
+  var b=document.getElementById('alert-badge');
+  b.style.display=a.length?'inline-block':'none';
+  b.textContent=a.length;
+}
+updateBadge();
+
+window._rpOnSyncComplete=function(){ populateMedicineDropdown(); renderProfitSummary(); renderHistory(); };
+RP.showSyncBanner('sale-sync-banner');
+
+// Set today's date
+document.getElementById('s-date').value=localDateStr();
+
+/* ============================================================
+   MEDICINE DROPDOWN
+============================================================ */
+function populateMedicineDropdown(){
+  var sel=document.getElementById('s-medicine');
+  var current=sel.value;
+  sel.innerHTML='<option value="">-- Select Medicine --</option>';
+  RP.getStock()
+    .filter(function(s){ return parseInt(s.quantity)>0; })
+    .forEach(function(s){
+      var hasCost=s.costPrice>0;
+      var label=s.name+(s.brand?' ('+s.brand+')':'')+
+        ' — '+s.quantity+' '+s.qtyType+
+        (hasCost?' | Cost:Rs.'+parseFloat(s.costPrice).toFixed(2):'');
+      var opt=document.createElement('option');
+      opt.value=s.id;
+      opt.textContent=label;
+      opt.setAttribute('data-cost',s.costPrice||0);
+      opt.setAttribute('data-mrp',s.mrp||0);
+      opt.setAttribute('data-qtytype',s.qtyType||'');
+      opt.setAttribute('data-qty',s.quantity||0);
+      opt.setAttribute('data-name',s.name||'');
+      opt.setAttribute('data-tps',s.tabletsPerStrip||0);
+      sel.appendChild(opt);
+    });
+  if(current) sel.value=current;
+}
+populateMedicineDropdown();
+
+/* ============================================================
+   MEDICINE SELECTED
+============================================================ */
+function onMedicineSelect(){
+  var sel=document.getElementById('s-medicine');
+  var opt=sel.selectedOptions[0];
+  if(!opt||!opt.value){
+    document.getElementById('s-qtyType').value='';
+    document.getElementById('s-stock-hint').textContent='';
+    document.getElementById('price-breakdown').style.display='none';
+    return;
+  }
+  var availQty=parseInt(opt.getAttribute('data-qty'))||0;
+  var qtyType=opt.getAttribute('data-qtytype')||'';
+  var cost=parseFloat(opt.getAttribute('data-cost'))||0;
+  document.getElementById('s-qtyType').value=qtyType;
+  document.getElementById('s-stock-hint').textContent=
+    'Available: '+availQty+' '+qtyType+
+    (cost>0?' | Cost price: Rs.'+cost.toFixed(2)+' per '+qtyType.replace(/s$/,''):'');
+
+  // Set max on qty input
+  document.getElementById('s-qty').max=availQty;
+  recalcSale();
+}
+
+/* ============================================================
+   RECALCULATE on input change
+============================================================ */
+function recalcSale(){
+  var sel=document.getElementById('s-medicine');
+  var opt=sel.selectedOptions[0];
+  if(!opt||!opt.value){
+    document.getElementById('price-breakdown').style.display='none';
+    return;
+  }
+
+  var costPerUnit    = parseFloat(opt.getAttribute('data-cost'))||0;
+  var mrpPerUnit     = parseFloat(opt.getAttribute('data-mrp'))||0;
+  var qty            = parseFloat(document.getElementById('s-qty').value)||0;
+  var discPct        = parseFloat(document.getElementById('s-discount').value)||0;
+  var availQty       = parseInt(opt.getAttribute('data-qty'))||0;
+
+  // Enforce max qty
+  if(qty>availQty){
+    document.getElementById('s-qty').value=availQty;
+    qty=availQty;
+    RP.toast('Max available stock is '+availQty,'warn');
+  }
+
+  // If MRP is 0, use cost price as MRP (fallback for items added without pricing)
+  var effectiveMrp = mrpPerUnit>0 ? mrpPerUnit : costPerUnit;
+
+  // Selling price = MRP - discount%
+  var discAmt        = effectiveMrp * (discPct/100);
+  var sellPerUnit    = effectiveMrp - discAmt;
+  var totalSell      = sellPerUnit * qty;
+  var totalCost      = costPerUnit * qty;
+  var profit         = totalSell - totalCost;
+
+  // Discount preview
+  var discPreview=document.getElementById('disc-preview');
+  if(discPct>0&&effectiveMrp>0){
+    discPreview.style.display='block';
+    discPreview.textContent='Discount: Rs.'+discAmt.toFixed(2)+
+      ' per unit → Selling at Rs.'+sellPerUnit.toFixed(2);
+  } else {
+    discPreview.style.display='none';
+  }
+
+  // Update breakdown
+  document.getElementById('price-breakdown').style.display='block';
+  document.getElementById('pb-cost-unit').textContent  = 'Rs. '+costPerUnit.toFixed(2);
+  document.getElementById('pb-mrp-unit').textContent   = 'Rs. '+effectiveMrp.toFixed(2);
+  document.getElementById('pb-discount').textContent   = discPct.toFixed(1)+' %';
+  document.getElementById('pb-sell-unit').textContent  = 'Rs. '+sellPerUnit.toFixed(2);
+  document.getElementById('pb-qty').textContent        = qty+' unit(s)';
+  document.getElementById('pb-total-sell').textContent = 'Rs. '+totalSell.toFixed(2);
+  document.getElementById('pb-total-cost').textContent = 'Rs. '+totalCost.toFixed(2);
+  document.getElementById('pb-profit').textContent     = (profit>=0?'+ ':'- ')+'Rs. '+Math.abs(profit).toFixed(2);
+
+  var profitRow=document.getElementById('pb-profit-row');
+  profitRow.classList.toggle('loss', profit<0);
+}
+
+/* ============================================================
+   SUBMIT SALE
+============================================================ */
+function submitSale(){
+  var sel=document.getElementById('s-medicine');
+  var opt=sel.selectedOptions[0];
+  if(!opt||!opt.value){ RP.toast('Select a medicine.','error'); return; }
+
+  var qty=parseInt(document.getElementById('s-qty').value)||0;
+  if(qty<=0){ RP.toast('Enter quantity sold.','error'); return; }
+
+  var costPerUnit   = parseFloat(opt.getAttribute('data-cost'))||0;
+  var mrpPerUnit    = parseFloat(opt.getAttribute('data-mrp'))||0;
+  var discPct       = parseFloat(document.getElementById('s-discount').value)||0;
+  var effectiveMrp  = mrpPerUnit>0?mrpPerUnit:costPerUnit;
+  var sellPerUnit   = effectiveMrp*(1-(discPct/100));
+  var totalSell     = sellPerUnit*qty;
+  var totalCost     = costPerUnit*qty;
+  var profit        = totalSell-totalCost;
+  var date          = document.getElementById('s-date').value;
+
+  var sale={
+    id:           RP.uid(),
+    stockId:      opt.value,
+    medicineName: opt.getAttribute('data-name')||'',
+    qtyType:      opt.getAttribute('data-qtytype')||'',
+    qtySold:      qty,
+    costPricePerUnit:   costPerUnit,
+    mrpPerUnit:         effectiveMrp,
+    discountPct:        discPct,
+    sellingPricePerUnit:sellPerUnit,
+    totalCost:          parseFloat(totalCost.toFixed(2)),
+    totalSelling:       parseFloat(totalSell.toFixed(2)),
+    profit:             parseFloat(profit.toFixed(2)),
+    date:         date,
+    createdOn:    new Date().toISOString()
+  };
+
+  RP_SALES.add(sale);
+
+  document.getElementById('sale-success-msg').innerHTML=
+    '<strong>'+sale.medicineName+'</strong><br>'+
+    qty+' '+sale.qtyType+' sold at Rs.'+sellPerUnit.toFixed(2)+' each<br>'+
+    'Total: Rs.'+totalSell.toFixed(2)+'<br>'+
+    '<span style="color:'+(profit>=0?'var(--success)':'var(--danger)')+';">'+
+    'Profit: '+(profit>=0?'+':'')+'Rs.'+profit.toFixed(2)+'</span>';
+  document.getElementById('sale-success-popup').classList.add('open');
+
+  populateMedicineDropdown();
+  renderProfitSummary();
+  renderHistory();
+  updateBadge();
+}
+
+function closeSaleSuccess(){
+  document.getElementById('sale-success-popup').classList.remove('open');
+  resetSaleForm();
+}
+
+function resetSaleForm(){
+  document.getElementById('s-medicine').value='';
+  document.getElementById('s-qtyType').value='';
+  document.getElementById('s-qty').value='';
+  document.getElementById('s-discount').value='';
+  document.getElementById('s-stock-hint').textContent='';
+  document.getElementById('s-date').value=localDateStr();
+  document.getElementById('price-breakdown').style.display='none';
+  document.getElementById('disc-preview').style.display='none';
+}
+
+/* ============================================================
+   PROFIT SUMMARY
+============================================================ */
+function renderProfitSummary(){
+  var today    = RP_SALES.getToday();
+  var allSales = RP_SALES.getAll();
+
+  var todayProfit   = RP_SALES.getProfit(today);
+  var overallProfit = RP_SALES.getProfit(allSales);
+  var todaySales    = today.length;
+  var totalSales    = allSales.length;
+  var todayRevenue  = today.reduce(function(s,x){return s+(x.totalSelling||0);},0);
+  var totalRevenue  = allSales.reduce(function(s,x){return s+(x.totalSelling||0);},0);
+
+  function profitColor(v){ return v>0?'var(--success)':v<0?'var(--danger)':'var(--muted)'; }
+  function profitSign(v){ return v>0?'+':''; }
+
+  document.getElementById('profit-summary').innerHTML=
+    card('Today\'s Profit','Rs. '+todayProfit.toFixed(2),
+      todaySales+' sale(s) | Revenue: Rs.'+todayRevenue.toFixed(2),
+      profitColor(todayProfit))+
+    card('Overall Profit','Rs. '+overallProfit.toFixed(2),
+      totalSales+' sale(s) | Total Revenue: Rs.'+totalRevenue.toFixed(2),
+      profitColor(overallProfit))+
+    card('Today\'s Sales',todaySales,'Transactions today','var(--accent)')+
+    card('Total Sales',totalSales,'All time transactions','var(--accent2)');
+
+  function card(label,val,sub,color){
+    return '<div class="profit-card">'+
+      '<div class="pc-label">'+label+'</div>'+
+      '<div class="pc-val" style="color:'+color+';">'+val+'</div>'+
+      '<div class="pc-sub">'+sub+'</div>'+
+    '</div>';
+  }
+}
+renderProfitSummary();
+
+/* ============================================================
+   SALE HISTORY
+============================================================ */
+function renderHistory(){
+  var filter=document.getElementById('hist-filter').value;
+  var now=new Date();
+  var sales;
+  if(filter==='today'){
+    sales=RP_SALES.getToday();
+  } else if(filter==='week'){
+    var wStart=new Date(now); wStart.setDate(now.getDate()-7);
+    sales=RP_SALES.getRange(localDateStr(wStart),localDateStr(now));
+  } else if(filter==='month'){
+    var mStart=new Date(now.getFullYear(),now.getMonth(),1);
+    sales=RP_SALES.getRange(localDateStr(mStart),localDateStr(now));
+  } else {
+    sales=RP_SALES.getAll();
+  }
+  sales=[].concat(sales).reverse();
+
+  document.getElementById('sale-count').textContent=sales.length+' records';
+
+  var container=document.getElementById('sale-history-list');
+  if(!sales.length){
+    container.innerHTML='<div class="empty-state"><div class="empty-icon" style="font-size:36px;">&#128200;</div><p>No sales for this period.</p></div>';
+    return;
+  }
+
+  var totalProfit=RP_SALES.getProfit(sales);
+  var totalRevenue=sales.reduce(function(s,x){return s+(x.totalSelling||0);},0);
+
+  container.innerHTML=
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;'+
+    'padding:10px 14px;margin-bottom:12px;font-size:.82rem;display:flex;gap:16px;flex-wrap:wrap;">'+
+    '<span>Revenue: <strong style="color:var(--accent2)">Rs.'+totalRevenue.toFixed(2)+'</strong></span>'+
+    '<span>Profit: <strong style="color:'+(totalProfit>=0?'var(--success)':'var(--danger)')+'">'+
+    (totalProfit>=0?'+':'')+'Rs.'+totalProfit.toFixed(2)+'</strong></span>'+
+    '</div>'+
+    sales.map(function(s){
+      var profitColor=s.profit>=0?'var(--success)':'var(--danger)';
+      return '<div class="sale-history-item">'+
+        '<div style="min-width:0;flex:1;">'+
+          '<div style="font-weight:600;font-size:.88rem;">'+s.medicineName+'</div>'+
+          '<div style="font-size:.75rem;color:var(--muted);margin-top:2px;">'+
+            s.qtySold+' '+s.qtyType+
+            ' | Sold @ Rs.'+parseFloat(s.sellingPricePerUnit).toFixed(2)+
+            ' | Disc: '+parseFloat(s.discountPct||0).toFixed(1)+'%'+
+            ' | '+RP.fmtDate(s.date)+
+          '</div>'+
+        '</div>'+
+        '<div style="text-align:right;flex-shrink:0;">'+
+          '<div style="font-weight:700;color:var(--accent);font-size:.88rem;font-family:monospace;">'+
+            'Rs.'+parseFloat(s.totalSelling).toFixed(2)+
+          '</div>'+
+          '<div style="font-size:.75rem;font-weight:600;color:'+profitColor+';">'+
+            (s.profit>=0?'+':'')+'Rs.'+parseFloat(s.profit).toFixed(2)+' profit'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+}
+renderHistory();
+
+/* ============================================================
+   CSV DOWNLOAD
+============================================================ */
+function downloadSalesCSV(){
+  var filter=document.getElementById('hist-filter').value;
+  var now=new Date();
+  var sales;
+  if(filter==='today') sales=RP_SALES.getToday();
+  else if(filter==='week'){
+    var ws=new Date(now); ws.setDate(now.getDate()-7);
+    sales=RP_SALES.getRange(localDateStr(ws),localDateStr(now));
+  } else if(filter==='month'){
+    var ms=new Date(now.getFullYear(),now.getMonth(),1);
+    sales=RP_SALES.getRange(localDateStr(ms),localDateStr(now));
+  } else sales=RP_SALES.getAll();
+
+  if(!sales.length){ RP.toast('No data to download.','warn'); return; }
+
+  var headers=['Date','Medicine','Qty Sold','Unit','Cost/Unit','MRP/Unit',
+    'Discount%','Selling Price/Unit','Total Selling','Total Cost','Profit'];
+  var rows=sales.map(function(s){
+    return [
+      s.date||'',
+      '"'+s.medicineName+'"',
+      s.qtySold,
+      '"'+s.qtyType+'"',
+      parseFloat(s.costPricePerUnit||0).toFixed(2),
+      parseFloat(s.mrpPerUnit||0).toFixed(2),
+      parseFloat(s.discountPct||0).toFixed(1),
+      parseFloat(s.sellingPricePerUnit||0).toFixed(2),
+      parseFloat(s.totalSelling||0).toFixed(2),
+      parseFloat(s.totalCost||0).toFixed(2),
+      parseFloat(s.profit||0).toFixed(2)
+    ].join(',');
+  });
+
+  var csv='\uFEFF'+[headers.join(',')].concat(rows).join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='rukmini-sales-'+filter+'-'+localDateStr()+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  RP.toast('Sales CSV downloaded.','success');
+}
+</script>
+</body>
+</html>

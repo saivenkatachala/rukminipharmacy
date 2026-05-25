@@ -6,119 +6,74 @@
 <title>Scan Stock — Rukmini Pharmacy</title>
 <link rel="icon" href="pp.png">
 <link rel="stylesheet" href="rp-styles.css"/>
-<!-- Tesseract.js OCR engine -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
-  /* ---- Tab switcher ---- */
-  .mode-tabs{display:flex;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;}
-  .mode-tab{
-    flex:1;padding:13px 20px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;
-    font-size:.92rem;font-weight:600;transition:.2s;background:var(--surface2);color:var(--text2);
-    display:flex;align-items:center;justify-content:center;gap:8px;
-  }
+  .mode-tabs{display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;}
+  .mode-tab{flex:1;padding:13px 20px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;
+    font-size:.9rem;font-weight:600;transition:.2s;background:var(--surface2);color:var(--text2);
+    display:flex;align-items:center;justify-content:center;gap:8px;}
   .mode-tab.active{background:var(--accent);color:#fff;}
   .mode-panel{display:none;}
   .mode-panel.active{display:block;}
 
-  /* ---- Scanner ---- */
-  .scan-area{
+  .drop-zone{
     border:2px dashed var(--border);border-radius:14px;
-    padding:32px;text-align:center;cursor:pointer;transition:.2s;
-    position:relative;min-height:160px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+    padding:36px 24px;text-align:center;cursor:pointer;
+    transition:.25s;background:var(--surface2);
   }
-  .scan-area:hover{border-color:var(--accent);background:rgba(0,212,170,.04);}
-  .scan-area.has-image{border-style:solid;border-color:var(--accent);}
-  .scan-area .scan-icon{font-size:42px;line-height:1;}
-  .scan-area p{color:var(--muted);font-size:.88rem;margin:0;}
-  .scan-area strong{color:var(--text);font-size:.95rem;}
-  #scan-preview{
-    max-width:100%;max-height:320px;border-radius:10px;
-    display:none;margin-top:12px;border:1px solid var(--border);
-  }
-  .progress-bar-wrap{
-    background:var(--surface2);border-radius:8px;overflow:hidden;
-    height:8px;margin:12px 0;
-  }
-  .progress-bar{height:100%;background:var(--grad);transition:width .3s;width:0%;}
-  .scan-status{font-size:.85rem;color:var(--muted);text-align:center;margin:6px 0;}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(0,212,170,.05);}
+  .drop-zone .dz-icon{font-size:40px;margin-bottom:10px;}
+  .drop-zone strong{font-size:.95rem;display:block;margin-bottom:4px;}
+  .drop-zone p{font-size:.82rem;color:var(--muted);margin:0;}
 
-  /* ---- Parsed items table ---- */
-  .parsed-table{width:100%;border-collapse:collapse;font-size:.88rem;}
-  .parsed-table th{
-    background:var(--surface2);padding:10px 12px;text-align:left;
-    font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;
-    letter-spacing:.07em;border-bottom:1px solid var(--border);
-  }
-  .parsed-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
-  .parsed-table tr:last-child td{border-bottom:none;}
-  .parsed-table input,.parsed-table select{
+  #camera-video{width:100%;border-radius:10px;border:1px solid var(--border);
+    display:none;max-height:300px;object-fit:cover;margin-top:10px;}
+  #scan-preview{max-width:100%;max-height:280px;border-radius:10px;
+    border:1px solid var(--border);display:none;margin-top:12px;}
+
+  .progress-wrap{margin:12px 0;}
+  .progress-bar-bg{background:var(--surface2);border-radius:8px;overflow:hidden;height:8px;}
+  .progress-bar-fill{height:100%;background:var(--grad);transition:width .3s;width:0%;}
+  .progress-label{font-size:.82rem;color:var(--muted);margin-bottom:6px;text-align:center;}
+
+  .raw-ocr{background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+    padding:12px;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);
+    max-height:150px;overflow-y:auto;white-space:pre-wrap;line-height:1.6;display:none;}
+
+  .parsed-tbl{width:100%;border-collapse:collapse;font-size:.86rem;}
+  .parsed-tbl th{background:var(--surface2);padding:9px 12px;text-align:left;
+    font-size:.73rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.07em;border-bottom:1px solid var(--border);}
+  .parsed-tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .parsed-tbl input,.parsed-tbl select{
     background:var(--surface2);border:1px solid var(--border);border-radius:7px;
-    color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;
-    padding:7px 10px;width:100%;
-  }
-  .parsed-table input:focus,.parsed-table select:focus{
-    outline:none;border-color:var(--accent);
-  }
-  .row-status{
-    display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
-  }
-  .row-status.ok{background:var(--success);}
-  .row-status.warn{background:var(--warn);}
-  .row-status.err{background:var(--danger);}
+    color:var(--text);font-family:'DM Sans',sans-serif;font-size:.83rem;
+    padding:6px 9px;width:100%;}
+  .parsed-tbl input:focus,.parsed-tbl select:focus{
+    outline:none;border-color:var(--accent);}
+  .conf-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+  .conf-ok{background:var(--success);}
+  .conf-warn{background:var(--warn);}
 
-  /* ---- Verify step ---- */
-  .verify-card{
-    background:var(--surface2);border:1px solid var(--border);
-    border-radius:12px;padding:16px 20px;margin-bottom:12px;
-  }
-  .verify-card .vc-head{
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:10px;flex-wrap:wrap;gap:8px;
-  }
-  .verify-card .vc-name{font-weight:700;font-size:.95rem;}
-  .verify-card .vc-meta{font-size:.8rem;color:var(--muted);}
-  .verify-card .vc-actions{display:flex;gap:8px;}
-
-  /* ---- Steps indicator ---- */
-  .steps{display:flex;align-items:center;gap:0;margin-bottom:28px;}
-  .step{
-    flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
-    position:relative;
-  }
-  .step:not(:last-child)::after{
-    content:'';position:absolute;top:16px;left:60%;width:80%;height:2px;
-    background:var(--border);z-index:0;
-  }
+  .steps{display:flex;margin-bottom:28px;}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;}
+  .step:not(:last-child)::after{content:'';position:absolute;top:15px;left:60%;
+    width:80%;height:2px;background:var(--border);}
   .step.done::after{background:var(--accent);}
-  .step-num{
-    width:32px;height:32px;border-radius:50%;border:2px solid var(--border);
-    background:var(--surface);color:var(--muted);font-size:.85rem;font-weight:700;
-    display:flex;align-items:center;justify-content:center;z-index:1;transition:.3s;
-  }
+  .step-num{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);
+    background:var(--surface);color:var(--muted);font-size:.82rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;z-index:1;transition:.3s;}
   .step.active .step-num{border-color:var(--accent);color:var(--accent);}
   .step.done .step-num{border-color:var(--accent);background:var(--accent);color:#fff;}
-  .step-label{font-size:.72rem;color:var(--muted);text-align:center;font-weight:500;}
-  .step.active .step-label{color:var(--accent);}
+  .step-label{font-size:.7rem;color:var(--muted);text-align:center;font-weight:500;}
+  .step.active .step-label,.step.done .step-label{color:var(--accent);}
 
-  /* ---- Raw OCR ---- */
-  .raw-ocr-box{
-    background:var(--surface2);border:1px solid var(--border);border-radius:10px;
-    padding:14px;font-family:'JetBrains Mono',monospace;font-size:.78rem;
-    color:var(--muted);max-height:160px;overflow-y:auto;
-    white-space:pre-wrap;line-height:1.6;
-  }
-
-  /* ---- Camera ---- */
-  #camera-video{
-    width:100%;border-radius:10px;border:1px solid var(--border);
-    display:none;max-height:300px;object-fit:cover;
-  }
-  .camera-btns{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
-
-  @media(max-width:640px){
-    .mode-tab{font-size:.8rem;padding:11px 10px;}
-  }
+  .verify-card{background:var(--surface2);border:1px solid var(--border);
+    border-radius:12px;padding:14px 18px;margin-bottom:10px;transition:.2s;}
+  .verify-card.approved{border-left:3px solid var(--success);}
+  .verify-card.rejected{border-left:3px solid var(--danger);opacity:.5;}
+  .vc-name{font-weight:700;font-size:.92rem;}
+  .vc-meta{font-size:.78rem;color:var(--muted);margin-top:3px;}
 </style>
 </head>
 <body>
@@ -126,29 +81,31 @@
   <a href="dashboard.html" class="navbar-brand">
     <div class="brand-icon">&#128138;</div><span>Rukmini Pharmacy</span>
   </a>
-    <div class="navbar-nav">
+  <div class="navbar-nav">
     <a href="dashboard.html" class="nav-link">&#127968; <span class="nav-text">Home</span></a>
     <a href="add-stock.html" class="nav-link">&#10133; <span class="nav-text">Add Stock</span></a>
     <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
     <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
+    <a href="stock-sale.html" class="nav-link">&#128200; <span class="nav-text">Stock Sale</span></a>
     <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
     <a href="scan-stock.html" class="nav-link active">&#128247; <span class="nav-text">Scan Stock</span></a>
-    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
+    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span>
+      <span class="badge" id="alert-badge" style="display:none">0</span></a>
   </div>
   <div class="navbar-right">
-    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">&#127769;</button>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </nav>
 
-<!-- CONFIRM IMPORT MODAL -->
+<!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal" style="max-width:420px;text-align:center;">
-    <div style="font-size:48px;margin-bottom:12px;">&#128230;</div>
+    <div style="font-size:44px;margin-bottom:12px;">&#128230;</div>
     <h3 style="margin-bottom:8px;">Confirm Stock Import</h3>
     <p style="color:var(--muted);margin:0 0 8px;" id="confirm-msg"></p>
-    <p style="color:var(--warn);font-size:.83rem;margin:0 0 22px;">
-      All verified items will be added to stock. This cannot be undone.
+    <p style="color:var(--warn);font-size:.82rem;margin:0 0 22px;">
+      Approved items will be added to stock. Cannot be undone.
     </p>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
@@ -161,98 +118,92 @@
 <div class="container">
   <div class="page-header">
     <h1>Scan &amp; Add Stock</h1>
-    <p>Add new stock by scanning an agency bill image, or enter medicines manually.</p>
+    <p>Scan an agency bill to extract medicine names automatically, or enter manually.</p>
   </div>
 
   <!-- Steps -->
-  <div class="steps" id="steps-indicator">
-    <div class="step active" id="step-1">
-      <div class="step-num">1</div>
-      <div class="step-label">Input</div>
-    </div>
-    <div class="step" id="step-2">
-      <div class="step-num">2</div>
-      <div class="step-label">Review</div>
-    </div>
-    <div class="step" id="step-3">
-      <div class="step-num">3</div>
-      <div class="step-label">Verify</div>
-    </div>
-    <div class="step" id="step-4">
-      <div class="step-num">4</div>
-      <div class="step-label">Import</div>
-    </div>
+  <div class="steps">
+    <div class="step active" id="step-1"><div class="step-num">1</div><div class="step-label">Input</div></div>
+    <div class="step" id="step-2"><div class="step-num">2</div><div class="step-label">Review</div></div>
+    <div class="step" id="step-3"><div class="step-num">3</div><div class="step-label">Verify</div></div>
+    <div class="step" id="step-4"><div class="step-num">4</div><div class="step-label">Done</div></div>
   </div>
 
-  <!-- ===== STEP 1: INPUT METHOD ===== -->
+  <!-- STEP 1 -->
   <div id="panel-step1">
     <div class="mode-tabs">
       <button class="mode-tab active" id="tab-scan" onclick="switchMode('scan')">
-        &#128247; Scan Bill (Camera / Upload)
+        &#128247; Scan Bill
       </button>
       <button class="mode-tab" id="tab-manual" onclick="switchMode('manual')">
         &#9997; Manual Entry
       </button>
     </div>
 
-    <!-- SCAN MODE -->
+    <!-- SCAN PANEL -->
     <div class="mode-panel active" id="panel-scan">
       <div class="card">
         <div class="card-header"><span class="card-title">Scan Agency Bill</span></div>
         <div class="card-body">
-          <p style="color:var(--muted);font-size:.87rem;margin-bottom:16px;">
-            Take a photo of the agency delivery bill or upload an existing image.
-            The system will automatically read medicine names, quantities, and expiry dates.
+          <p style="color:var(--muted);font-size:.86rem;margin-bottom:16px;">
+            Upload or capture a photo of the agency delivery bill.
+            The scanner extracts <strong>only medicine names and quantities</strong> — all invoice headers,
+            totals, GST, addresses are automatically filtered out.
           </p>
 
-          <!-- Camera option -->
-          <video id="camera-video" autoplay playsinline></video>
-          <canvas id="camera-canvas" style="display:none;"></canvas>
-
-          <!-- Drag & Drop Zone -->
-          <div class="scan-upload-zone" id="drop-zone"
+          <!-- Drop zone -->
+          <div class="drop-zone" id="drop-zone"
             onclick="document.getElementById('file-input').click()"
             ondragover="event.preventDefault();this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
-            ondrop="handleFileDrop(event)">
-            <div style="font-size:36px;margin-bottom:8px;">&#128247;</div>
+            ondrop="handleDrop(event)">
+            <div class="dz-icon">&#128247;</div>
             <strong>Drop bill image here or click to upload</strong>
-            <p style="margin-top:6px;">Supports JPG, PNG, PDF images</p>
+            <p>Supports JPG, PNG — clear photo works best</p>
           </div>
           <input type="file" id="file-input" accept="image/*" style="display:none"
-            onchange="handleFileUpload(this)"/>
-          <div class="camera-btns" id="camera-btns" style="margin-top:10px;">
+            onchange="handleFile(this)"/>
+
+          <!-- Camera -->
+          <video id="camera-video" autoplay playsinline></video>
+          <canvas id="camera-canvas" style="display:none;"></canvas>
+
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
             <button class="btn btn-secondary" onclick="startCamera()">&#128247; Use Camera</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">&#128193; Upload File</button>
-            <button class="btn btn-danger btn-sm" id="btn-stop-camera"
+            <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">
+              &#128193; Upload File
+            </button>
+            <button class="btn btn-danger btn-sm" id="btn-stop-cam"
               style="display:none" onclick="stopCamera()">Stop Camera</button>
           </div>
-          <button class="btn btn-primary" id="btn-capture" style="display:none;margin-top:10px;"
-            onclick="capturePhoto()">Capture Photo</button>
+          <button class="btn btn-primary" id="btn-capture"
+            style="display:none;margin-top:10px;" onclick="capturePhoto()">
+            Capture Photo
+          </button>
 
           <!-- Preview -->
           <img id="scan-preview" alt="Bill preview"/>
 
           <!-- Progress -->
-          <div id="scan-progress" style="display:none;margin-top:16px;">
-            <div class="scan-status" id="scan-status-text">Initialising OCR engine...</div>
-            <div class="progress-bar-wrap">
-              <div class="progress-bar" id="progress-bar"></div>
+          <div id="scan-progress" style="display:none;margin-top:14px;">
+            <div class="progress-label" id="progress-label">Starting OCR...</div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="progress-fill"></div>
             </div>
           </div>
 
-          <!-- Raw OCR output (collapsible) -->
-          <div id="raw-ocr-section" style="display:none;margin-top:16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <span style="font-size:.8rem;font-weight:600;color:var(--muted);">RAW OCR TEXT</span>
-              <button class="btn btn-sm btn-secondary" onclick="toggleRawOcr()">Toggle</button>
+          <!-- Raw OCR toggle -->
+          <div id="raw-section" style="display:none;margin-top:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:.78rem;font-weight:600;color:var(--muted);">RAW OCR TEXT</span>
+              <button class="btn btn-sm btn-secondary" onclick="toggleRaw()">Toggle</button>
             </div>
-            <div class="raw-ocr-box" id="raw-ocr-box" style="display:none;"></div>
+            <div class="raw-ocr" id="raw-ocr"></div>
           </div>
 
           <div id="scan-actions" style="display:none;margin-top:16px;">
-            <button class="btn btn-primary" onclick="proceedToReview()">
-              Review Parsed Items &rarr;
+            <button class="btn btn-primary" onclick="goToReview()">
+              Review Extracted Items &rarr;
             </button>
             <button class="btn btn-secondary" style="margin-left:10px;" onclick="rescan()">
               Rescan
@@ -260,87 +211,82 @@
           </div>
         </div>
       </div>
-    </div><!-- /panel-scan -->
+    </div>
 
-    <!-- MANUAL MODE -->
+    <!-- MANUAL PANEL -->
     <div class="mode-panel" id="panel-manual">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Manual Stock Entry</span>
+          <span class="card-title">Manual Entry</span>
           <button class="btn btn-sm btn-secondary" onclick="addManualRow()">+ Add Row</button>
         </div>
         <div class="card-body">
-          <p style="color:var(--muted);font-size:.87rem;margin-bottom:16px;">
-            Enter multiple medicines at once. All rows will go through the verification step before saving.
-          </p>
           <div style="overflow-x:auto;">
-            <table class="parsed-table" id="manual-table">
-              <thead>
-                <tr>
-                  <th style="min-width:180px;">Medicine Name *</th>
-                  <th style="min-width:130px;">Type *</th>
-                  <th style="min-width:130px;">Brand</th>
-                  <th style="min-width:110px;">Qty Type *</th>
-                  <th style="min-width:80px;">Qty *</th>
-                  <th style="min-width:120px;">Expiry *</th>
-                  <th style="width:40px;"></th>
-                </tr>
-              </thead>
+            <table class="parsed-tbl">
+              <thead><tr>
+                <th style="min-width:180px;">Medicine Name *</th>
+                <th style="min-width:130px;">Type *</th>
+                <th style="min-width:120px;">Brand</th>
+                <th style="min-width:100px;">Qty Type *</th>
+                <th style="min-width:70px;">Qty *</th>
+                <th style="min-width:120px;">Expiry *</th>
+                <th style="min-width:90px;">Cost/Unit</th>
+                <th style="min-width:90px;">MRP/Unit</th>
+                <th style="width:36px;"></th>
+              </tr></thead>
               <tbody id="manual-tbody"></tbody>
             </table>
           </div>
-          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
             <button class="btn btn-secondary" onclick="addManualRow()">+ Add Row</button>
-            <button class="btn btn-primary" onclick="proceedManualToVerify()">
-              Verify Entries &rarr;
-            </button>
+            <button class="btn btn-primary" onclick="manualToVerify()">Verify Entries &rarr;</button>
           </div>
-        </div>
-      </div>
-    </div><!-- /panel-manual -->
-  </div><!-- /panel-step1 -->
-
-  <!-- ===== STEP 2: REVIEW PARSED (scan only) ===== -->
-  <div id="panel-step2" style="display:none;">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Review Scanned Items</span>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-sm btn-secondary" onclick="addParsedRow()">+ Add Row</button>
-          <button class="btn btn-sm btn-secondary" onclick="backToStep1()">Back</button>
-        </div>
-      </div>
-      <div class="card-body">
-        <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">
-          OCR has pre-filled these fields. Please review and correct any errors before verifying.
-        </p>
-        <div style="overflow-x:auto;">
-          <table class="parsed-table" id="parsed-table">
-            <thead>
-              <tr>
-                <th style="width:32px;"></th>
-                <th style="min-width:180px;">Medicine Name *</th>
-                <th style="min-width:130px;">Type *</th>
-                <th style="min-width:130px;">Brand</th>
-                <th style="min-width:110px;">Qty Type *</th>
-                <th style="min-width:80px;">Qty *</th>
-                <th style="min-width:120px;">Expiry *</th>
-                <th style="width:40px;"></th>
-              </tr>
-            </thead>
-            <tbody id="parsed-tbody"></tbody>
-          </table>
-        </div>
-        <div style="margin-top:16px;">
-          <button class="btn btn-primary" onclick="proceedToVerify()">
-            Proceed to Verify &rarr;
-          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ===== STEP 3: VERIFY ===== -->
+  <!-- STEP 2: REVIEW (scan flow) -->
+  <div id="panel-step2" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Review Scanned Items</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-secondary" onclick="addReviewRow()">+ Add Row</button>
+          <button class="btn btn-sm btn-secondary" onclick="setStep(1)">Back</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--muted);font-size:.84rem;margin-bottom:12px;">
+          <span style="color:var(--success);">&#11044;</span> Green = medicine detected with expiry.
+          <span style="color:var(--warn);">&#11044;</span> Yellow = expiry missing — please fill.
+          Remove any rows that are not medicines.
+        </p>
+        <div style="overflow-x:auto;">
+          <table class="parsed-tbl">
+            <thead><tr>
+              <th style="width:28px;"></th>
+              <th style="min-width:180px;">Medicine Name *</th>
+              <th style="min-width:130px;">Type *</th>
+              <th style="min-width:120px;">Brand</th>
+              <th style="min-width:100px;">Qty Type *</th>
+              <th style="min-width:70px;">Qty *</th>
+              <th style="min-width:120px;">Expiry *</th>
+              <th style="min-width:90px;">Cost/Unit</th>
+              <th style="min-width:90px;">MRP/Unit</th>
+              <th style="width:36px;"></th>
+            </tr></thead>
+            <tbody id="review-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-primary" onclick="reviewToVerify()">Proceed to Verify &rarr;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: VERIFY -->
   <div id="panel-step3" style="display:none;">
     <div class="card">
       <div class="card-header">
@@ -348,33 +294,31 @@
         <button class="btn btn-sm btn-secondary" onclick="backToReview()">Back</button>
       </div>
       <div class="card-body">
-        <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;">
-          Review each item carefully. Mark items as Approved or Reject them before final import.
+        <p style="color:var(--muted);font-size:.84rem;margin-bottom:14px;">
+          Approve or reject each item. Only approved items will be added to stock.
         </p>
         <div id="verify-list"></div>
-        <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-success" onclick="approveAll()">Approve All</button>
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-success btn-sm" onclick="approveAll()">Approve All</button>
           <button class="btn btn-danger btn-sm" onclick="rejectAll()">Reject All</button>
-          <div style="flex:1;"></div>
-          <span id="verify-count" style="color:var(--muted);font-size:.85rem;"></span>
-          <button class="btn btn-primary" onclick="openConfirm()">
-            Import Approved Items &rarr;
-          </button>
+          <span style="flex:1;"></span>
+          <span id="verify-count" style="color:var(--muted);font-size:.83rem;"></span>
+          <button class="btn btn-primary" onclick="openConfirm()">Import Approved &rarr;</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ===== STEP 4: DONE ===== -->
+  <!-- STEP 4: DONE -->
   <div id="panel-step4" style="display:none;text-align:center;">
     <div class="card" style="max-width:480px;margin:0 auto;">
       <div class="card-body" style="padding:40px 32px;">
-        <div style="font-size:56px;margin-bottom:16px;">&#10003;</div>
-        <h3 style="margin-bottom:10px;">Stock Imported Successfully!</h3>
-        <p style="color:var(--muted);margin:0 0 24px;line-height:1.7;" id="import-result-msg"></p>
+        <div style="font-size:52px;margin-bottom:14px;">&#10003;</div>
+        <h3 style="margin-bottom:10px;">Stock Imported!</h3>
+        <p style="color:var(--muted);margin:0 0 24px;line-height:1.7;" id="import-msg"></p>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
           <a href="view-stock.html" class="btn btn-primary">View Stock</a>
-          <button class="btn btn-secondary" onclick="startOver()">Add More Stock</button>
+          <button class="btn btn-secondary" onclick="startOver()">Add More</button>
         </div>
       </div>
     </div>
@@ -403,14 +347,12 @@ function updateBadge(){
 }
 updateBadge();
 
-/* =========== State =========== */
-var currentMode='scan'; // 'scan' | 'manual'
-var parsedItems=[];     // items from OCR or manual, before verify
-var verifyItems=[];     // items in verify step
+var currentMode='scan';
+var parsedItems=[];
+var verifyItems=[];
 var cameraStream=null;
-var currentStep=1;
 
-/* =========== Mode tabs =========== */
+/* ---- Mode tabs ---- */
 function switchMode(m){
   currentMode=m;
   document.getElementById('tab-scan').classList.toggle('active',m==='scan');
@@ -419,14 +361,15 @@ function switchMode(m){
   document.getElementById('panel-manual').classList.toggle('active',m==='manual');
 }
 
-/* =========== Step indicator =========== */
+/* ---- Steps ---- */
 function setStep(n){
-  currentStep=n;
   for(var i=1;i<=4;i++){
     var el=document.getElementById('step-'+i);
     el.classList.remove('active','done');
     if(i<n) el.classList.add('done');
     if(i===n) el.classList.add('active');
+    document.getElementById('panel-step'+(i===1?1:i)).style.display=
+      (i===1||i>1)?'none':'none';
   }
   document.getElementById('panel-step1').style.display=n===1?'block':'none';
   document.getElementById('panel-step2').style.display=n===2?'block':'none';
@@ -434,564 +377,592 @@ function setStep(n){
   document.getElementById('panel-step4').style.display=n===4?'block':'none';
 }
 
-/* =========================================================
+/* ============================================================
    CAMERA
-========================================================= */
+============================================================ */
 function startCamera(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    RP.toast('Camera not supported on this device.','error'); return;
+    RP.toast('Camera not supported on this browser.','error'); return;
   }
   navigator.mediaDevices.getUserMedia({
-    video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}
+    video:{facingMode:{ideal:'environment'}}
   }).then(function(stream){
     cameraStream=stream;
-    var vid=document.getElementById('camera-video');
-    vid.srcObject=stream;
-    vid.style.display='block';
+    var v=document.getElementById('camera-video');
+    v.srcObject=stream; v.style.display='block';
     document.getElementById('btn-capture').style.display='inline-flex';
-    document.getElementById('btn-stop-camera').style.display='inline-flex';
-    RP.toast('Camera started. Position bill clearly and capture.','info');
-  }).catch(function(err){
-    RP.toast('Camera error: '+err.message,'error');
-  });
+    document.getElementById('btn-stop-cam').style.display='inline-flex';
+  }).catch(function(e){ RP.toast('Camera error: '+e.message,'error'); });
 }
-
 function stopCamera(){
   if(cameraStream){ cameraStream.getTracks().forEach(function(t){t.stop();}); cameraStream=null; }
   document.getElementById('camera-video').style.display='none';
   document.getElementById('btn-capture').style.display='none';
-  document.getElementById('btn-stop-camera').style.display='none';
+  document.getElementById('btn-stop-cam').style.display='none';
 }
-
 function capturePhoto(){
-  var vid=document.getElementById('camera-video');
-  var canvas=document.getElementById('camera-canvas');
-  canvas.width=vid.videoWidth;
-  canvas.height=vid.videoHeight;
-  var ctx=canvas.getContext('2d');
-  ctx.drawImage(vid,0,0);
+  var v=document.getElementById('camera-video');
+  var c=document.getElementById('camera-canvas');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
   stopCamera();
-  var dataUrl=canvas.toDataURL('image/png');
-  showPreviewAndScan(dataUrl);
+  startOCR(c.toDataURL('image/png'));
 }
-
-function handleFileDrop(event){
-  event.preventDefault();
+function handleDrop(e){
+  e.preventDefault();
   document.getElementById('drop-zone').classList.remove('drag-over');
-  var files=event.dataTransfer&&event.dataTransfer.files;
-  if(!files||!files[0]) return;
-  var reader=new FileReader();
-  reader.onload=function(e){ showPreviewAndScan(e.target.result); };
-  reader.readAsDataURL(files[0]);
+  var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+  if(!f) return;
+  var r=new FileReader();
+  r.onload=function(ev){ startOCR(ev.target.result); };
+  r.readAsDataURL(f);
 }
-function handleFileUpload(input){
+function handleFile(input){
   if(!input.files||!input.files[0]) return;
-  var file=input.files[0];
-  var reader=new FileReader();
-  reader.onload=function(e){ showPreviewAndScan(e.target.result); };
-  reader.readAsDataURL(file);
+  var r=new FileReader();
+  r.onload=function(e){ startOCR(e.target.result); };
+  r.readAsDataURL(input.files[0]);
+}
+function rescan(){
+  document.getElementById('scan-preview').style.display='none';
+  document.getElementById('scan-progress').style.display='none';
+  document.getElementById('raw-section').style.display='none';
+  document.getElementById('scan-actions').style.display='none';
 }
 
-/* =========================================================
-   OCR ENGINE — Tesseract.js
-========================================================= */
-function showPreviewAndScan(dataUrl){
+/* ============================================================
+   OCR
+============================================================ */
+function startOCR(dataUrl){
   var preview=document.getElementById('scan-preview');
-  preview.src=dataUrl;
-  preview.style.display='block';
+  preview.src=dataUrl; preview.style.display='block';
   document.getElementById('scan-progress').style.display='block';
   document.getElementById('scan-actions').style.display='none';
-  document.getElementById('raw-ocr-section').style.display='none';
-  runOCR(dataUrl);
-}
-
-function runOCR(dataUrl){
+  document.getElementById('raw-section').style.display='none';
   setProgress(5,'Loading OCR engine...');
 
   Tesseract.recognize(dataUrl,'eng',{
     logger:function(m){
-      if(m.status==='recognizing text'){
-        setProgress(Math.round(10+m.progress*80),'Reading text from image... '+Math.round(m.progress*100)+'%');
-      } else if(m.status==='loading tesseract core'){
-        setProgress(10,'Loading OCR engine...');
-      } else if(m.status==='initializing api'){
-        setProgress(15,'Initialising...');
-      }
+      if(m.status==='recognizing text')
+        setProgress(Math.round(10+m.progress*80),'Reading text... '+Math.round(m.progress*100)+'%');
     }
   }).then(function(result){
-    setProgress(100,'Parsing complete!');
-    var rawText=result.data.text;
-    document.getElementById('raw-ocr-box').textContent=rawText||'(no text detected)';
-    document.getElementById('raw-ocr-section').style.display='block';
-    parsedItems=parseOCRText(rawText);
+    setProgress(100,'Parsing medicines...');
+    var raw=result.data.text||'';
+    document.getElementById('raw-ocr').textContent=raw||'(no text found)';
+    document.getElementById('raw-section').style.display='block';
+    parsedItems=extractMedicinesOnly(raw);
     document.getElementById('scan-actions').style.display='block';
     if(parsedItems.length>0){
-      RP.toast('Found '+parsedItems.length+' item(s) from the bill.','success');
+      RP.toast('Found '+parsedItems.length+' medicine(s).','success');
     } else {
-      RP.toast('Could not auto-detect items. Review raw text and add manually.','warn');
+      RP.toast('No medicines detected. Check raw text or add manually.','warn');
     }
-  }).catch(function(err){
-    setProgress(0,'OCR failed: '+err.message);
-    RP.toast('OCR error: '+err.message,'error');
+  }).catch(function(e){
+    setProgress(0,'OCR failed: '+e.message);
     document.getElementById('scan-actions').style.display='block';
     parsedItems=[];
+    RP.toast('OCR error — add items manually.','error');
   });
 }
-
 function setProgress(pct,msg){
-  document.getElementById('progress-bar').style.width=pct+'%';
-  document.getElementById('scan-status-text').textContent=msg;
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=msg;
 }
-
-function toggleRawOcr(){
-  var b=document.getElementById('raw-ocr-box');
+function toggleRaw(){
+  var b=document.getElementById('raw-ocr');
   b.style.display=b.style.display==='none'?'block':'none';
 }
 
-/* =========================================================
-   OCR TEXT PARSER
-   Tries to extract medicine rows from typical agency invoice text.
-   Looks for lines with qty numbers, dates, medicine-like words.
-========================================================= */
-function parseOCRText(text){
+/* ============================================================
+   SMART MEDICINE EXTRACTION
+   Strategy:
+   1. Split OCR into lines
+   2. Remove all lines that are clearly invoice metadata
+      (addresses, totals, GST, phone, dates, prices only)
+   3. From remaining lines, extract only lines that LOOK like
+      medicine names — contain pharmaceutical keywords or
+      dosage patterns (mg, ml, mcg, iu, %, tab, cap, etc.)
+   4. Extract qty and expiry from same or adjacent lines
+============================================================ */
+function extractMedicinesOnly(text){
   if(!text||!text.trim()) return [];
-  var lines=text.split('\n');
-  var items=[];
 
-  // Patterns
-  var datePatterns=[
-    /(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{2,4})/,
-    /(\d{2}[\/\-\.]\d{4})/,
-    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\/\-\.\s]\d{2,4}/i,
-    /exp[iry]*[:\s]+(\d{2}[\/\-\.]\d{2,4})/i,
-    /exp[:\s]+(\d{2}[\/\-\.]\d{4})/i
+  var lines=text.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>2;});
+
+  /* ── Patterns ── */
+  // Dosage keywords that appear in real medicine names
+  var DOSAGE_PAT=/\b(\d+\.?\d*)\s*(mg|ml|mcg|ug|iu|g\b|%|tab|cap|sr\b|xr\b|er\b|od\b|bd\b|tds\b|qid\b)/i;
+  // Medicine suffix patterns
+  var MED_SUFFIX=/\b(tablet|capsule|syrup|injection|drops|cream|ointment|gel|lotion|spray|powder|sachet|suspension|solution|infusion|ampoule|vial|inhaler)\b/i;
+  // Strip/qty unit patterns
+  var QTY_PAT=/\b(\d{1,4})\s*(strip|tab|cap|bot|btl|vial|tube|sac|pkt|box|nos|pc|pcs)\b/i;
+  // Expiry patterns
+  var EXP_PATS=[
+    /exp[iry.:\s]*(\d{2}[\/\-.]\d{2,4})/i,
+    /(\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4})/,
+    /(\d{2}[\/\-.]\d{4})/,
+    /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[.\-\/\s]+(\d{2,4})/i
   ];
-  var qtyPattern=/\b(\d{1,4})\s*(tab|cap|bot|btl|vial|tube|sac|syr|str|strip|box|pcs|nos|pc)\b/i;
-  var skipWords=['invoice','bill','total','amount','gst','tax','discount','price','mrp',
-    'batch','sr no','s.no','company','dealer','date','address','phone','pincode',
-    'name','hsn','sgst','cgst','igst','subtotal','grand'];
 
+  /* ── Lines to ALWAYS skip ── */
+  var SKIP_START=[
+    'invoice','bill no','bill date','date','address','to','from','city','state','pin',
+    'phone','mobile','tel','fax','email','gstin','gst no','pan','drug licence','dl no',
+    'dl:','hsn','total','subtotal','sub total','grand total','amount','net amount',
+    'tax','sgst','cgst','igst','vat','cess','discount','freight','transport',
+    'payment','balance','paid','due','cash','cheque','neft','upi',
+    'sr no','s.no','sno','sl no','item','description','product','qty','rate',
+    'mrp','batch','mfg','mfr','manufactured','expiry','exp date',
+    'thank','regards','terms','subject','note','page','print'
+  ];
+  var SKIP_EXACT=[
+    'no','yes','na','nil','rupees','rs','inr','only','total amount'
+  ];
+
+  /* ── Price-only line: starts/ends with Rs or pure numbers ── */
+  function isPriceOnlyLine(l){
+    return /^rs\.?\s*\d/i.test(l) ||
+           /^\d[\d,.\s]+$/.test(l) ||
+           /^[\d,.\s]+rs/i.test(l);
+  }
+
+  /* ── Check if a line looks like a medicine ── */
+  function looksLikeMedicine(line){
+    var l=line.toLowerCase();
+    if(DOSAGE_PAT.test(line)) return true;
+    if(MED_SUFFIX.test(line)) return true;
+    // Common pharma brand suffixes
+    if(/\b(forte|plus|duo|comp|xp|max|junior|paed|pediatric|adult|kid)\b/i.test(line)) return true;
+    // Contains qty unit — likely a product line
+    if(QTY_PAT.test(line)) return true;
+    return false;
+  }
+
+  /* ── Filter lines ── */
+  var candidates=[];
   lines.forEach(function(line){
-    var clean=line.trim();
-    if(clean.length<5) return;
-    if(clean.split(' ').length<2) return;
+    var lower=line.toLowerCase().trim();
 
-    // Skip header/footer lines
-    var lower=clean.toLowerCase();
-    var isSkip=skipWords.some(function(w){ return lower.indexOf(w)===0; });
-    if(isSkip) return;
+    // Skip if too short
+    if(lower.length<4) return;
 
-    // Try to find a date in this line or adjacent context
-    var foundDate='';
-    datePatterns.forEach(function(p){
-      var m=clean.match(p);
-      if(m&&!foundDate){
-        foundDate=normaliseDate(m[1]||m[0]);
+    // Skip if matches skip-start patterns
+    var skipIt=SKIP_START.some(function(sw){ return lower.startsWith(sw); });
+    if(skipIt) return;
+
+    // Skip exact matches
+    if(SKIP_EXACT.indexOf(lower)!==-1) return;
+
+    // Skip price-only lines
+    if(isPriceOnlyLine(line)) return;
+
+    // Skip lines that are purely numbers/prices/codes
+    if(/^[\d\s,.\-\/\\:]+$/.test(line)) return;
+
+    // Skip lines with too few alphabetic words (likely a code or number row)
+    var alphaWords=line.split(/\s+/).filter(function(w){return /[a-z]{2,}/i.test(w);});
+    if(alphaWords.length<1) return;
+
+    // Skip lines that look like full addresses (contain state/city names or PIN)
+    if(/\b\d{6}\b/.test(line)) return; // 6-digit PIN
+
+    candidates.push(line);
+  });
+
+  /* ── From candidates, extract medicine entries ── */
+  var items=[];
+  var usedLines={};
+
+  candidates.forEach(function(line, idx){
+    // Check if this line looks like a medicine
+    if(!looksLikeMedicine(line)){
+      // Still include if it has alpha words that could be a name
+      // but only if a neighbouring line confirms (expiry nearby)
+      var hasNearExpiry=false;
+      for(var ni=Math.max(0,idx-2);ni<=Math.min(candidates.length-1,idx+2);ni++){
+        if(ni===idx) continue;
+        EXP_PATS.some(function(p){ if(p.test(candidates[ni])){ hasNearExpiry=true; return true; } return false; });
       }
-    });
-
-    // Try to find a qty in this line
-    var foundQty=1;
-    var foundQtyType='Strips';
-    var qm=clean.match(qtyPattern);
-    if(qm){
-      foundQty=parseInt(qm[1])||1;
-      foundQtyType=normaliseQtyType(qm[2]);
-    } else {
-      // fallback: look for standalone numbers
-      var nums=clean.match(/\b(\d{1,4})\b/g);
-      if(nums&&nums.length>0){
-        var n=parseInt(nums[0]);
-        if(n>=1&&n<=9999) foundQty=n;
-      }
+      if(!hasNearExpiry) return;
     }
 
-    // Extract medicine name — first alphabetic chunk
-    var namePart=clean
-      .replace(/\d{2}[\/\-\.]\d{2}[\/\-\.]\d{2,4}/g,'')
-      .replace(/Rs\.?\s*\d+[\.,]?\d*/gi,'')
-      .replace(/\d+(\.\d+)?%/g,'')
-      .replace(/\b\d{5,}\b/g,'')
-      .replace(/[|_#@*=]+/g,' ')
+    if(usedLines[idx]) return;
+    usedLines[idx]=true;
+
+    /* ── Extract qty ── */
+    var qty=1, qtyType='Strips';
+    var qm=line.match(QTY_PAT);
+    if(qm){ qty=parseInt(qm[1])||1; qtyType=normQtyType(qm[2]); }
+    else{
+      var nums=line.match(/\b(\d{1,4})\b/g);
+      if(nums){ var n=parseInt(nums[0]); if(n>=1&&n<=9999) qty=n; }
+    }
+
+    /* ── Extract expiry — check current line + ±2 neighbours ── */
+    var expiry='';
+    var checkLines=[line];
+    for(var ni=Math.max(0,idx-2);ni<=Math.min(candidates.length-1,idx+2);ni++){
+      if(ni!==idx) checkLines.push(candidates[ni]);
+    }
+    checkLines.some(function(cl){
+      return EXP_PATS.some(function(p){
+        var m=cl.match(p);
+        if(m){ expiry=normaliseDate(m[1]||m[2]||m[0]); return true; }
+        return false;
+      });
+    });
+
+    /* ── Extract medicine name ── */
+    var namePart=line
+      .replace(QTY_PAT,'')
+      .replace(/\b\d{5,}\b/g,'')           // remove long numbers (batch codes)
+      .replace(/Rs\.?\s*\d+[\d.,]*/gi,'')   // remove prices
+      .replace(/\d+(\.\d+)?%/g,'')          // remove percentages
+      .replace(/\d{2}[\/\-.]\d{2}[\/\-.]\d{2,4}/g,'')  // remove dates
+      .replace(/[|_#@*=\\\/]+/g,' ')
+      .replace(/\s{2,}/g,' ')
       .trim();
 
-    // Get first meaningful word chunk (medicine name)
+    // Get alphabetic words — max 5 words for medicine name
     var words=namePart.split(/\s+/).filter(function(w){
-      return w.length>2 && isNaN(w) && !/^[\d\/\-\.]+$/.test(w);
+      return w.length>=2 && !/^[\d\-\/.,]+$/.test(w) && !/^(rs|no|nr|sl|sr)$/i.test(w);
     });
     if(words.length<1) return;
-    var medName=words.slice(0,4).join(' ').trim();
+
+    var medName=words.slice(0,5).join(' ').trim();
     if(medName.length<3) return;
 
-    // Determine medicine type guess
-    var typeGuess=guessMedType(medName+' '+clean);
-
     items.push({
-      name: toTitleCase(medName),
-      medType: typeGuess,
-      brand: '',
-      qtyType: foundQtyType,
-      quantity: foundQty,
-      expiry: foundDate,
-      confidence: foundDate?'ok':'warn'
+      name:        toTitle(medName),
+      medType:     guessMedType(medName+' '+line),
+      brand:       '',
+      qtyType:     qtyType,
+      quantity:    qty,
+      expiry:      expiry,
+      costPrice:   0,
+      mrp:         0,
+      confidence:  expiry?'ok':'warn'
     });
   });
 
-  // Deduplicate similar names
+  /* ── Deduplicate by normalised name ── */
   var seen={};
   var deduped=[];
   items.forEach(function(item){
-    var key=item.name.toLowerCase().replace(/\s+/g,'');
+    var key=item.name.toLowerCase().replace(/\s+/g,'').slice(0,12);
     if(!seen[key]){ seen[key]=true; deduped.push(item); }
   });
 
-  return deduped.slice(0,50); // max 50 items
+  return deduped.slice(0,60);
 }
 
+/* ---- Helpers ---- */
+function normQtyType(raw){
+  var map={
+    strip:'Strips',str:'Strips',tab:'Strips',cap:'Strips',
+    bot:'Bottles',btl:'Bottles',
+    vial:'Vials',tube:'Tubes',sac:'Sachets',
+    box:'Boxes',pkt:'Packets',pcs:'Packets',nos:'Packets',pc:'Packets'
+  };
+  return map[(raw||'').toLowerCase()]||'Strips';
+}
 function normaliseDate(str){
   if(!str) return '';
   str=str.trim();
-  // Try to build YYYY-MM-DD
-  var parts=str.split(/[\/\-\.]/);
+  var parts=str.split(/[\/\-.]/);
   if(parts.length===3){
     var d=parts[0].padStart(2,'0');
     var m=parts[1].padStart(2,'0');
-    var y=parts[2];
-    if(y.length===2) y='20'+y;
-    if(parseInt(m)>12){ var tmp=m; m=d; d=tmp; } // swap if month>12
+    var y=parts[2]; if(y.length===2) y='20'+y;
+    if(parseInt(m)>12){var tmp=m;m=d;d=tmp;}
     return y+'-'+m+'-'+d;
   }
   if(parts.length===2){
     var m2=parts[0].padStart(2,'0');
-    var y2=parts[1];
-    if(y2.length===2) y2='20'+y2;
+    var y2=parts[1]; if(y2.length===2) y2='20'+y2;
     return y2+'-'+m2+'-01';
+  }
+  // month-name year
+  var mn=str.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\-\/]+(\d{2,4})/i);
+  if(mn){
+    var months={jan:'01',feb:'02',mar:'03',apr:'04',may:'05',jun:'06',
+                jul:'07',aug:'08',sep:'09',oct:'10',nov:'11',dec:'12'};
+    var y3=mn[2]; if(y3.length===2) y3='20'+y3;
+    return y3+'-'+(months[mn[1].toLowerCase().slice(0,3)]||'01')+'-01';
   }
   return '';
 }
-
-function normaliseQtyType(raw){
-  var map={
-    tab:'Strips',cap:'Strips',str:'Strips',strip:'Strips',
-    bot:'Bottles',btl:'Bottles',syr:'Bottles',
-    vial:'Vials',tube:'Tubes',sac:'Sachets',
-    box:'Boxes',pcs:'Packets',nos:'Packets',pc:'Packets'
-  };
-  return map[(raw||'').toLowerCase()]||'Strips';
-}
-
 function guessMedType(text){
   var t=text.toLowerCase();
   if(/syrup|sus|susp|liquid|oral sol/i.test(t)) return 'Syrups';
-  if(/inj|injection|vial|amp|ampoule/i.test(t)) return 'Injections';
+  if(/inj|injection|vial|amp|ampoule|infusion/i.test(t)) return 'Injections';
   if(/drop|eye|ear|nasal dr/i.test(t)) return 'Drops';
-  if(/cream|oint|gel|lotion|topical/i.test(t)) return 'Creams';
+  if(/cream|oint|topical/i.test(t)) return 'Creams';
+  if(/gel\b/i.test(t)) return 'Gels';
+  if(/lotion/i.test(t)) return 'Lotions';
   if(/capsule|cap\b/i.test(t)) return 'Capsules';
   if(/powder|sachet/i.test(t)) return 'Powders';
-  if(/spray/i.test(t)) return 'Sprays';
+  if(/spray|inhaler/i.test(t)) return 'Sprays';
   if(/soap/i.test(t)) return 'Soaps';
   if(/patch/i.test(t)) return 'Patches';
   return 'Tablets';
 }
-
-function toTitleCase(str){
-  return str.replace(/\w\S*/g,function(w){
+function toTitle(s){
+  return s.replace(/\w+/g,function(w){
     return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
   });
 }
 
-/* =========================================================
-   STEP 2: REVIEW TABLE (scan flow)
-========================================================= */
-function proceedToReview(){
-  buildReviewTable(parsedItems.length?parsedItems:[{name:'',medType:'Tablets',brand:'',qtyType:'Strips',quantity:1,expiry:'',confidence:'warn'}]);
+/* ============================================================
+   REVIEW TABLE (scan flow)
+============================================================ */
+function goToReview(){
+  var items=parsedItems.length?parsedItems:
+    [{name:'',medType:'Tablets',brand:'',qtyType:'Strips',quantity:1,expiry:'',
+      costPrice:0,mrp:0,confidence:'warn'}];
+  buildReviewTable(items);
   setStep(2);
 }
-
-function backToStep1(){ setStep(1); }
-function rescan(){
-  document.getElementById('scan-preview').style.display='none';
-  document.getElementById('scan-progress').style.display='none';
-  document.getElementById('raw-ocr-section').style.display='none';
-  document.getElementById('scan-actions').style.display='none';
-}
-
 function buildReviewTable(items){
-  var tbody=document.getElementById('parsed-tbody');
+  var tbody=document.getElementById('review-tbody');
   tbody.innerHTML='';
-  items.forEach(function(item){ appendParsedRow(item); });
+  items.forEach(function(item){ appendReviewRow(item); });
 }
+function addReviewRow(){ appendReviewRow({name:'',medType:'Tablets',brand:'',qtyType:'Strips',quantity:1,expiry:'',costPrice:0,mrp:0,confidence:'warn'}); }
 
-function addParsedRow(){
-  appendParsedRow({name:'',medType:'Tablets',brand:'',qtyType:'Strips',quantity:1,expiry:'',confidence:'warn'});
-}
-
-function appendParsedRow(item){
-  var tbody=document.getElementById('parsed-tbody');
+function appendReviewRow(item){
+  var tbody=document.getElementById('review-tbody');
+  var id='rr_'+RP.uid();
   var tr=document.createElement('tr');
-  var id='pr_'+RP.uid();
   tr.id=id;
-  var conf=item.confidence||'warn';
-  var confLabel=conf==='ok'?'ok':'warn';
+  var conf=item.confidence==='ok'?'conf-ok':'conf-warn';
   var typeOpts=RP.MED_TYPES.map(function(t){
     return '<option value="'+t+'"'+(t===item.medType?' selected':'')+'>'+t+'</option>';
   }).join('');
-  var qtyOpts=RP.QTY_TYPES.map(function(q){
+  var qtyOpts=['Tablets'].concat(RP.QTY_TYPES.filter(function(q){return q!=='Tablets';})).map(function(q){
     return '<option value="'+q+'"'+(q===item.qtyType?' selected':'')+'>'+q+'</option>';
   }).join('');
-
   tr.innerHTML=
-    '<td><span class="row-status '+confLabel+'"></span></td>'+
-    '<td><input type="text" value="'+escHtml(item.name||'')+'" placeholder="Medicine name" required/></td>'+
+    '<td><span class="conf-dot '+conf+'"></span></td>'+
+    '<td><input type="text" value="'+esc(item.name||'')+'" placeholder="Medicine name" required/></td>'+
     '<td><select>'+typeOpts+'</select></td>'+
-    '<td><input type="text" value="'+escHtml(item.brand||'')+'" placeholder="Brand (optional)"/></td>'+
+    '<td><input type="text" value="'+esc(item.brand||'')+'" placeholder="Brand"/></td>'+
     '<td><select>'+qtyOpts+'</select></td>'+
-    '<td><input type="number" min="1" value="'+(item.quantity||1)+'" style="width:70px;"/></td>'+
+    '<td><input type="number" min="1" value="'+(item.quantity||1)+'" style="width:65px;"/></td>'+
     '<td><input type="date" value="'+(item.expiry||'')+'" required/></td>'+
-    '<td><button class="btn btn-icon btn-danger btn-sm" onclick="removeParsedRow(\''+id+'\')">x</button></td>';
+    '<td><input type="number" min="0" step="0.01" value="'+(item.costPrice||'')+'" placeholder="0.00" style="width:80px;"/></td>'+
+    '<td><input type="number" min="0" step="0.01" value="'+(item.mrp||'')+'" placeholder="0.00" style="width:80px;"/></td>'+
+    '<td><button class="btn btn-icon btn-danger btn-sm" onclick="document.getElementById(\''+id+'\').remove()">&#10005;</button></td>';
   tbody.appendChild(tr);
 }
 
-function removeParsedRow(id){
-  document.getElementById(id)?.remove();
-}
-
-function getParsedTableData(tbodyId){
+function getTableData(tbodyId){
   var rows=document.getElementById(tbodyId).querySelectorAll('tr');
   var items=[];
   rows.forEach(function(row){
     var inputs=row.querySelectorAll('input,select');
-    if(inputs.length<6) return;
-    var name=inputs[0].value.trim();
+    if(inputs.length<7) return;
+    var name=(inputs[0].value||'').trim();
     if(!name) return;
     items.push({
-      id: RP.uid(),
-      name: name,
-      medType: inputs[1].value,
-      brand: inputs[2].value.trim(),
-      qtyType: inputs[3].value,
-      quantity: parseInt(inputs[4].value)||1,
-      expiry: inputs[5].value||'',
-      addedOn: new Date().toISOString().slice(0,10),
-      source: 'scan'
+      id:RP.uid(), name:name, medType:inputs[1].value,
+      brand:(inputs[2].value||'').trim(), qtyType:inputs[3].value,
+      quantity:parseInt(inputs[4].value)||1,
+      expiry:inputs[5].value||'',
+      costPrice:parseFloat(inputs[6].value)||0,
+      mrp:parseFloat(inputs[7].value)||0,
+      addedOn:new Date().toISOString().slice(0,10), source:'scan'
     });
   });
   return items;
 }
 
-function proceedToVerify(){
-  var items=getParsedTableData('parsed-tbody');
-  if(!items.length){ RP.toast('Add at least one item to continue.','warn'); return; }
-  var valid=items.filter(function(i){ return i.name&&i.expiry; });
-  if(valid.length<items.length){
-    if(!confirm('Some rows are missing Expiry Date. Continue anyway?')) return;
-  }
+function reviewToVerify(){
+  var items=getTableData('review-tbody');
+  if(!items.length){ RP.toast('Add at least one item.','warn'); return; }
   verifyItems=items.map(function(i){ return Object.assign({},i,{approved:true}); });
-  buildVerifyStep();
+  buildVerifyList();
   setStep(3);
 }
-
-/* =========================================================
-   MANUAL MODE
-========================================================= */
-function addManualRow(){
-  var tbody=document.getElementById('manual-tbody');
-  var tr=document.createElement('tr');
-  var id='mr_'+RP.uid();
-  tr.id=id;
-  var typeOpts=RP.MED_TYPES.map(function(t){
-    return '<option value="'+t+'"'+(t==='Tablets'?' selected':'')+'>'+t+'</option>';
-  }).join('');
-  var qtyOpts=RP.QTY_TYPES.map(function(q){
-    return '<option value="'+q+'"'+(q==='Strips'?' selected':'')+'>'+q+'</option>';
-  }).join('');
-  tr.innerHTML=
-    '<td><input type="text" placeholder="e.g. Paracetamol 500mg" required/></td>'+
-    '<td><select>'+typeOpts+'</select></td>'+
-    '<td><input type="text" placeholder="Brand (optional)"/></td>'+
-    '<td><select>'+qtyOpts+'</select></td>'+
-    '<td><input type="number" min="1" value="1" style="width:70px;" required/></td>'+
-    '<td><input type="date" required/></td>'+
-    '<td><button class="btn btn-icon btn-danger btn-sm" onclick="removeManualRow(\''+id+'\')">x</button></td>';
-  tbody.appendChild(tr);
-}
-
-function removeManualRow(id){
-  document.getElementById(id)?.remove();
-}
-
-function proceedManualToVerify(){
-  var items=getParsedTableData('manual-tbody');
-  if(!items.length){ RP.toast('Add at least one item to continue.','warn'); return; }
-  // Validate required
-  var missing=items.filter(function(i){ return !i.name||!i.expiry; });
-  if(missing.length){
-    RP.toast('Please fill Medicine Name and Expiry Date for all rows.','error'); return;
-  }
-  verifyItems=items.map(function(i){ return Object.assign({},i,{approved:true,source:'manual'}); });
-  buildVerifyStep();
-  setStep(3);
-}
-
-/* =========================================================
-   STEP 3: VERIFY
-========================================================= */
-function buildVerifyStep(){
-  var list=document.getElementById('verify-list');
-  list.innerHTML='';
-  verifyItems.forEach(function(item,idx){
-    var card=document.createElement('div');
-    card.className='verify-card';
-    card.id='vc_'+idx;
-    var now=new Date();
-    var exp=item.expiry?new Date(item.expiry):null;
-    var expWarn=exp&&exp<now?'Expired!':
-      exp&&exp<=new Date(now.setMonth(now.getMonth()+3))?'Near expiry':null;
-    var warnings='';
-    if(!item.expiry) warnings+='<span class="badge badge-warn" style="margin-right:4px;">No expiry</span>';
-    if(expWarn) warnings+='<span class="badge badge-danger" style="margin-right:4px;">'+expWarn+'</span>';
-
-    card.innerHTML=
-      '<div class="vc-head">'+
-        '<div>'+
-          '<div class="vc-name">'+escHtml(item.name)+'</div>'+
-          '<div class="vc-meta">'+
-            item.medType+
-            (item.brand?' &nbsp;&middot;&nbsp; '+item.brand:'')+
-            ' &nbsp;&middot;&nbsp; '+item.quantity+' '+item.qtyType+
-            ' &nbsp;&middot;&nbsp; Expiry: '+(item.expiry||'Not set')+
-            (item.source?' &nbsp;&middot;&nbsp; Source: '+item.source:'')+
-          '</div>'+
-          (warnings?'<div style="margin-top:6px;">'+warnings+'</div>':'')+
-        '</div>'+
-        '<div class="vc-actions">'+
-          '<button class="btn btn-sm btn-success" id="approve-btn-'+idx+'" onclick="setApproval('+idx+',true)">Approved</button>'+
-          '<button class="btn btn-sm btn-danger" id="reject-btn-'+idx+'" onclick="setApproval('+idx+',false)">Reject</button>'+
-        '</div>'+
-      '</div>';
-    list.appendChild(card);
-    setApproval(idx,true); // default approved
-  });
-  updateVerifyCount();
-}
-
-function setApproval(idx,approved){
-  verifyItems[idx].approved=approved;
-  var approveBtn=document.getElementById('approve-btn-'+idx);
-  var rejectBtn=document.getElementById('reject-btn-'+idx);
-  var card=document.getElementById('vc_'+idx);
-  if(approved){
-    approveBtn.className='btn btn-sm btn-success';
-    rejectBtn.className='btn btn-sm btn-secondary';
-    card.style.opacity='1';
-    card.style.borderColor='var(--border)';
-  } else {
-    approveBtn.className='btn btn-sm btn-secondary';
-    rejectBtn.className='btn btn-sm btn-danger';
-    card.style.opacity='.5';
-    card.style.borderColor='var(--danger)';
-  }
-  updateVerifyCount();
-}
-
-function approveAll(){
-  verifyItems.forEach(function(_,i){ setApproval(i,true); });
-}
-function rejectAll(){
-  verifyItems.forEach(function(_,i){ setApproval(i,false); });
-}
-
-function updateVerifyCount(){
-  var approved=verifyItems.filter(function(i){ return i.approved; }).length;
-  document.getElementById('verify-count').textContent=
-    approved+' of '+verifyItems.length+' items approved';
-}
-
 function backToReview(){
   if(currentMode==='scan') setStep(2);
   else setStep(1);
 }
 
-/* =========================================================
-   CONFIRM + IMPORT
-========================================================= */
+/* ============================================================
+   MANUAL FLOW
+============================================================ */
+function addManualRow(){
+  var tbody=document.getElementById('manual-tbody');
+  var id='mr_'+RP.uid();
+  var tr=document.createElement('tr');
+  tr.id=id;
+  var typeOpts=RP.MED_TYPES.map(function(t){
+    return '<option value="'+t+'"'+(t==='Tablets'?' selected':'')+'>'+t+'</option>';
+  }).join('');
+  var qtyOpts=['Tablets'].concat(RP.QTY_TYPES.filter(function(q){return q!=='Tablets';})).map(function(q){
+    return '<option value="'+q+'"'+(q==='Strips'?' selected':'')+'>'+q+'</option>';
+  }).join('');
+  tr.innerHTML=
+    '<td><input type="text" placeholder="Medicine name" required/></td>'+
+    '<td><select>'+typeOpts+'</select></td>'+
+    '<td><input type="text" placeholder="Brand"/></td>'+
+    '<td><select>'+qtyOpts+'</select></td>'+
+    '<td><input type="number" min="1" value="1" style="width:65px;" required/></td>'+
+    '<td><input type="date" required/></td>'+
+    '<td><input type="number" min="0" step="0.01" placeholder="0.00" style="width:80px;"/></td>'+
+    '<td><input type="number" min="0" step="0.01" placeholder="0.00" style="width:80px;"/></td>'+
+    '<td><button class="btn btn-icon btn-danger btn-sm" onclick="document.getElementById(\''+id+'\').remove()">&#10005;</button></td>';
+  tbody.appendChild(tr);
+}
+
+function manualToVerify(){
+  var items=getTableData('manual-tbody');
+  if(!items.length){ RP.toast('Add at least one item.','warn'); return; }
+  var missing=items.filter(function(i){return !i.expiry;});
+  if(missing.length&&!confirm('Some items have no expiry date. Continue?')) return;
+  verifyItems=items.map(function(i){ return Object.assign({},i,{approved:true,source:'manual'}); });
+  buildVerifyList();
+  setStep(3);
+}
+
+/* ============================================================
+   VERIFY
+============================================================ */
+function buildVerifyList(){
+  var list=document.getElementById('verify-list');
+  list.innerHTML='';
+  var now=new Date();
+  var warn=new Date(); warn.setMonth(warn.getMonth()+RP.EXPIRY_WARN_MONTHS);
+
+  verifyItems.forEach(function(item,idx){
+    var card=document.createElement('div');
+    card.className='verify-card approved';
+    card.id='vc_'+idx;
+
+    var exp=item.expiry?new Date(item.expiry):null;
+    var alerts='';
+    if(!item.expiry) alerts+='<span class="badge badge-warn" style="margin-right:4px;">No expiry</span>';
+    else if(exp&&exp<now) alerts+='<span class="badge badge-danger" style="margin-right:4px;">Expired</span>';
+    else if(exp&&exp<=warn) alerts+='<span class="badge badge-warn" style="margin-right:4px;">Near expiry</span>';
+
+    var pricingInfo='';
+    if(item.costPrice>0||item.mrp>0){
+      pricingInfo=' &nbsp;|&nbsp; Cost: Rs.'+parseFloat(item.costPrice||0).toFixed(2)+
+        ' &nbsp;|&nbsp; MRP: Rs.'+parseFloat(item.mrp||0).toFixed(2);
+    }
+
+    card.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'+
+        '<div>'+
+          '<div class="vc-name">'+esc(item.name)+'</div>'+
+          '<div class="vc-meta">'+
+            item.medType+
+            (item.brand?' &middot; '+item.brand:'')+
+            ' &middot; '+item.quantity+' '+item.qtyType+
+            ' &middot; Expiry: '+(item.expiry||'Not set')+
+            pricingInfo+
+            ' &middot; Source: '+(item.source||'scan')+
+          '</div>'+
+          (alerts?'<div style="margin-top:6px;">'+alerts+'</div>':'')+
+        '</div>'+
+        '<div style="display:flex;gap:8px;flex-shrink:0;">'+
+          '<button class="btn btn-sm btn-success" id="app-'+idx+'" onclick="setApproval('+idx+',true)">Approved</button>'+
+          '<button class="btn btn-sm btn-secondary" id="rej-'+idx+'" onclick="setApproval('+idx+',false)">Reject</button>'+
+        '</div>'+
+      '</div>';
+    list.appendChild(card);
+  });
+  updateVerifyCount();
+}
+function setApproval(idx,val){
+  verifyItems[idx].approved=val;
+  var card=document.getElementById('vc_'+idx);
+  card.classList.toggle('approved',val);
+  card.classList.toggle('rejected',!val);
+  document.getElementById('app-'+idx).className='btn btn-sm '+(val?'btn-success':'btn-secondary');
+  document.getElementById('rej-'+idx).className='btn btn-sm '+(val?'btn-secondary':'btn-danger');
+  updateVerifyCount();
+}
+function approveAll(){ verifyItems.forEach(function(_,i){setApproval(i,true);}); }
+function rejectAll(){ verifyItems.forEach(function(_,i){setApproval(i,false);}); }
+function updateVerifyCount(){
+  var n=verifyItems.filter(function(i){return i.approved;}).length;
+  document.getElementById('verify-count').textContent=n+' of '+verifyItems.length+' approved';
+}
+
+/* ============================================================
+   IMPORT
+============================================================ */
 function openConfirm(){
-  var approved=verifyItems.filter(function(i){ return i.approved; });
-  if(!approved.length){ RP.toast('No items approved for import.','warn'); return; }
+  var approved=verifyItems.filter(function(i){return i.approved;});
+  if(!approved.length){ RP.toast('No items approved.','warn'); return; }
   document.getElementById('confirm-msg').textContent=
-    approved.length+' medicine(s) will be added to your stock.';
+    approved.length+' medicine(s) will be added / updated in stock.';
   document.getElementById('confirm-modal').classList.add('open');
 }
-function closeConfirm(){
-  document.getElementById('confirm-modal').classList.remove('open');
-}
+function closeConfirm(){ document.getElementById('confirm-modal').classList.remove('open'); }
 
 function doImport(){
   closeConfirm();
-  var approved=verifyItems.filter(function(i){ return i.approved; });
+  var approved=verifyItems.filter(function(i){return i.approved;});
   if(!approved.length) return;
 
   var stock=RP.getStock();
+  var added=0, updated=0;
 
   approved.forEach(function(item){
-    // Check if medicine already exists (by name similarity)
     var existing=stock.findIndex(function(s){
       return s.name.toLowerCase()===item.name.toLowerCase();
     });
     if(existing!==-1){
-      // Update quantity — add to existing
+      // Merge — add quantities
       stock[existing].quantity=(parseInt(stock[existing].quantity)||0)+item.quantity;
-      stock[existing].expiry=item.expiry||stock[existing].expiry;
+      if(item.expiry) stock[existing].expiry=item.expiry;
+      if(item.costPrice>0) stock[existing].costPrice=item.costPrice;
+      if(item.mrp>0) stock[existing].mrp=item.mrp;
       stock[existing].updatedOn=new Date().toISOString().slice(0,10);
+      RP.postToSheet({action:'updateStock',data:stock[existing]});
+      updated++;
     } else {
-      // Add as new entry
-      stock.push({
-        id: item.id||RP.uid(),
-        medType: item.medType,
-        name: item.name,
-        brand: item.brand||'',
-        qtyType: item.qtyType,
-        quantity: item.quantity,
-        expiry: item.expiry||'',
-        notes: 'Added via '+(item.source==='manual'?'manual entry':'bill scan'),
-        addedOn: item.addedOn||new Date().toISOString().slice(0,10),
-        source: item.source||'scan'
+      // New entry
+      var newItem=Object.assign({},item,{
+        id:item.id||RP.uid(),
+        costPricePerUnit:item.costPrice||0,
+        mrpPerUnit:item.mrp||0,
+        notes:'Added via '+(item.source==='manual'?'manual entry':'bill scan')
       });
+      stock.push(newItem);
+      RP.postToSheet({action:'addStock',data:newItem});
+      added++;
     }
-    // Sync to Google Sheets
-    RP.postToSheet({action:'addStock', data:stock[stock.length-1]||item});
   });
 
   RP.saveStock(stock);
-
-  document.getElementById('import-result-msg').innerHTML=
-    '<strong>'+approved.length+' item(s)</strong> added to stock.<br>'+
-    'Items that already existed had their quantities updated.';
+  document.getElementById('import-msg').innerHTML=
+    '<strong>'+added+'</strong> new item(s) added.<br>'+
+    '<strong>'+updated+'</strong> existing item(s) updated with new quantity.';
   setStep(4);
-  RP.toast(approved.length+' items imported to stock!','success');
+  updateBadge();
+  RP.toast(approved.length+' items imported!','success');
 }
 
 function startOver(){
-  parsedItems=[];
-  verifyItems=[];
+  parsedItems=[]; verifyItems=[];
   document.getElementById('manual-tbody').innerHTML='';
-  document.getElementById('parsed-tbody').innerHTML='';
+  document.getElementById('review-tbody').innerHTML='';
   document.getElementById('scan-preview').style.display='none';
   document.getElementById('scan-progress').style.display='none';
-  document.getElementById('raw-ocr-section').style.display='none';
+  document.getElementById('raw-section').style.display='none';
   document.getElementById('scan-actions').style.display='none';
   setStep(1);
   addManualRow();
 }
 
-/* =========================================================
-   HELPERS
-========================================================= */
-function escHtml(s){
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// Init manual table with one row
+// Init
 addManualRow();
 </script>
 </body>

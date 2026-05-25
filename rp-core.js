@@ -15,7 +15,7 @@
 const RP = {
 
   // ---- IMPORTANT: Replace with your deployed Apps Script URL ----
-  SHEET_URL: 'https://script.google.com/macros/s/AKfycbxXFE6J_dfZQBrFUHLlC7XlbP3C93cpKOk5dYi_PWpG7H_RG6rIb9hg_6tAz_ntEcAKeQ/exec',
+      SHEET_URL: 'https://script.google.com/macros/s/AKfycbxsbmlG0VMPBmXbnEs28wpd8zbJ5ZATZwJYi5jouMxnxsgxCicugKIKpwmRY-1mnBfzvQ/exec',
 
   OWNER_EMAIL: 'saivenkatachala@gmail.com',
 
@@ -29,6 +29,21 @@ const RP = {
 
   LOW_STOCK: 5,
   EXPIRY_WARN_MONTHS: 3,
+
+  // ============================================================
+  // LOCAL DATE — returns YYYY-MM-DD in the device's local timezone
+  // DO NOT use new Date().toISOString().slice(0,10) — that gives
+  // UTC date which is yesterday for India (UTC+5:30) before 5:30 AM
+  // ============================================================
+  localDateStr(d){
+    const dt = d ? new Date(d) : new Date();
+    const y  = dt.getFullYear();
+    const m  = String(dt.getMonth()+1).padStart(2,'0');
+    const day= String(dt.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  },
+
+
 
   // ============================================================
   // CACHE KEYS  (localStorage — per-device speed cache only)
@@ -94,6 +109,7 @@ const RP = {
       if(data && data.status === 'ok'){
         if(Array.isArray(data.stock))  this._setCached(this._KEY_STOCK, data.stock);
         if(Array.isArray(data.bills))  this._setCached(this._KEY_BILLS, data.bills);
+        if(Array.isArray(data.sales))  { try{ localStorage.setItem('rp_sales_cache', JSON.stringify(data.sales)); }catch(e){} }
         localStorage.setItem(this._KEY_SYNC_TS, new Date().toISOString());
         console.info('[RP] Synced from Sheet —', (data.stock||[]).length, 'stock items,', (data.bills||[]).length, 'bills.');
         return { ok: true, stock: data.stock, bills: data.bills };
@@ -180,7 +196,7 @@ const RP = {
   // Add a new stock item
   addStockItem(item){
     item.id      = item.id || this.uid();
-    item.addedOn = item.addedOn || new Date().toISOString().slice(0,10);
+    item.addedOn = item.addedOn || this.localDateStr();
     const stock  = this.getStock();
     stock.push(item);
     this.saveStock(stock);
@@ -193,7 +209,7 @@ const RP = {
     const stock = this.getStock();
     const idx   = stock.findIndex(s => s.id === id);
     if(idx === -1) return false;
-    stock[idx] = { ...stock[idx], ...changes, updatedOn: new Date().toISOString().slice(0,10) };
+    stock[idx] = { ...stock[idx], ...changes, updatedOn: this.localDateStr() };
     this.saveStock(stock);
     this.postToSheet({ action: 'updateStock', data: stock[idx] });
     return true;
@@ -366,5 +382,84 @@ const RP = {
     document.body.appendChild(t);
     setTimeout(() => t.classList.add('show'), 10);
     setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3500);
+  }
+};
+
+// ============================================================
+// SALES DATA  (v2 — Stock Sale feature)
+// ============================================================
+// Sales are stored separately from bills.
+// Bills = customer invoices (use MRP)
+// Sales = internal stock movement tracking (use cost price for profit)
+
+const RP_SALES = {
+
+  _KEY: 'rp_sales_cache',
+
+  _get(){ try{ return JSON.parse(localStorage.getItem(this._KEY)||'[]'); }catch{ return []; } },
+  _set(arr){ try{ localStorage.setItem(this._KEY, JSON.stringify(arr)); }catch(e){} },
+
+  getAll(){ return this._get(); },
+
+  // skipStockDeduct=true when caller (billing.html) already deducted stock
+  add(sale, skipStockDeduct){
+    sale.id        = sale.id || RP.uid();
+    sale.createdOn = sale.createdOn || new Date().toISOString();
+    sale.date      = sale.date      || RP.localDateStr();
+    const sales = this._get();
+    sales.push(sale);
+    this._set(sales);
+    // Only deduct stock if caller hasn't already done it
+    if(!skipStockDeduct){
+      const stock = RP.getStock();
+      const idx = stock.findIndex(s => s.id === sale.stockId);
+      if(idx !== -1){
+        stock[idx].quantity = Math.max(0, (parseInt(stock[idx].quantity)||0) - (parseInt(sale.qtySold)||0));
+      }
+      RP.saveStock(stock);
+    }
+    RP.postToSheet({ action: 'addSale', data: sale });
+    return sale;
+  },
+
+  // Profit = (sellingPrice - costPrice) * qty
+  // costPrice here = cost per unit as entered in add-stock
+  getProfit(sales){
+    return (sales||this._get()).reduce((sum, s) => {
+      const profit = ((parseFloat(s.sellingPricePerUnit)||0) - (parseFloat(s.costPricePerUnit)||0))
+                     * (parseInt(s.qtySold)||0);
+      return sum + profit;
+    }, 0);
+  },
+
+  // Today's sales
+  getToday(){
+    const today = RP.localDateStr();
+    // Compare date strings directly — no Date object to avoid UTC shift
+    return this._get().filter(s => this._saleDate(s) === today);
+  },
+
+  // Sales in a date range — pure string comparison, no Date objects
+  getRange(from, to){
+    const f = String(from).slice(0,10);
+    const t = String(to).slice(0,10);
+    return this._get().filter(s => {
+      const d = this._saleDate(s);
+      return d >= f && d <= t;
+    });
+  },
+
+  // Get the local YYYY-MM-DD date of a sale record safely
+  // Uses stored .date field (already localDateStr format)
+  // Falls back to parsing createdOn in LOCAL timezone
+  _saleDate(s){
+    if(s.date && /^\d{4}-\d{2}-\d{2}/.test(s.date)){
+      return s.date.slice(0,10);
+    }
+    // createdOn is ISO string — extract local date via localDateStr
+    if(s.createdOn){
+      return RP.localDateStr(new Date(s.createdOn));
+    }
+    return '';
   }
 };

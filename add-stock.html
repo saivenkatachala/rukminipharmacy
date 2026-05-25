@@ -7,25 +7,62 @@
 <link rel="icon" href="pp.png">
 <link rel="stylesheet" href="rp-styles.css"/>
 <style>
-  .submit-area{display:flex;gap:12px;align-items:center;margin-top:24px;flex-wrap:wrap;}
-  .qty-hint{font-size:.78rem;color:var(--warn);margin-top:4px;display:none;}
+  .pricing-grid{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:12px;padding:16px;margin-top:4px;
+  }
+  @media(max-width:700px){.pricing-grid{grid-template-columns:1fr 1fr;}}
+  @media(max-width:480px){.pricing-grid{grid-template-columns:1fr;}}
+
+  .pricing-grid .section-label{
+    grid-column:1/-1;font-size:.75rem;font-weight:700;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.09em;
+    padding-bottom:4px;border-bottom:1px solid var(--border);margin-bottom:4px;
+  }
+  .price-result{
+    grid-column:1/-1;
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;
+  }
+  .price-result .pr-item{display:flex;flex-direction:column;gap:2px;}
+  .price-result .pr-label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.07em;}
+  .price-result .pr-val{font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+  .pr-val.green{color:var(--success);}
+  .pr-val.blue{color:var(--accent2);}
+  .pr-val.orange{color:var(--warn);}
+
+  .strip-info{
+    background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.2);
+    border-radius:8px;padding:10px 14px;font-size:.83rem;color:var(--info);
+    margin-top:6px;display:none;
+  }
+  .hint{font-size:.76rem;color:var(--muted);margin-top:4px;}
+  .tab-switcher{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+  .tab-btn{
+    flex:1;padding:11px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;
+    font-size:.88rem;font-weight:600;background:var(--surface2);color:var(--text2);transition:.2s;
+  }
+  .tab-btn.active{background:var(--accent);color:#fff;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
 </style>
 </head>
 <body>
-<!-- NAVBAR -->
 <nav class="navbar">
   <a href="dashboard.html" class="navbar-brand">
-    <div class="brand-icon">&#128138;</div>
-    <span>Rukmini Pharmacy</span>
+    <div class="brand-icon">&#128138;</div><span>Rukmini Pharmacy</span>
   </a>
-    <div class="navbar-nav">
+  <div class="navbar-nav">
     <a href="dashboard.html" class="nav-link">&#127968; <span class="nav-text">Home</span></a>
     <a href="add-stock.html" class="nav-link active">&#10133; <span class="nav-text">Add Stock</span></a>
     <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
     <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
     <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
     <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
-    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
+    <a href="stock-sale.html" class="nav-link">&#128200; <span class="nav-text">Stock Sale</span></a>
+    <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span>
+      <span class="badge" id="alert-badge" style="display:none">0</span></a>
   </div>
   <div class="navbar-right">
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">&#127769;</button>
@@ -36,104 +73,235 @@
 <!-- LOW STOCK POPUP -->
 <div class="popup-overlay" id="low-popup">
   <div class="popup-box">
-    <div class="popup-icon">⚠️</div>
-    <div class="popup-title">Low Stock Warning!</div>
+    <div class="popup-icon">&#9888;</div>
+    <div class="popup-title">Low Stock Warning</div>
     <div class="popup-msg" id="low-popup-msg"></div>
-    <div style="display:flex;gap:10px;justify-content:center;">
-      <button class="btn btn-warn" onclick="closeLowPopup()">Acknowledge</button>
-    </div>
+    <button class="btn btn-warn" onclick="document.getElementById('low-popup').classList.remove('open')">Acknowledge</button>
   </div>
 </div>
 
 <!-- EXPIRY POPUP -->
 <div class="popup-overlay" id="exp-popup">
   <div class="popup-box">
-    <div class="popup-icon">⏰</div>
-    <div class="popup-title">Expiry Alert!</div>
+    <div class="popup-icon">&#9200;</div>
+    <div class="popup-title">Expiry Alert</div>
     <div class="popup-msg" id="exp-popup-msg"></div>
-    <div style="display:flex;gap:10px;justify-content:center;">
-      <button class="btn btn-primary" onclick="closeExpPopup()">Understood</button>
-    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('exp-popup').classList.remove('open')">Understood</button>
   </div>
 </div>
 
 <div class="page">
 <div class="container">
-
   <div class="page-header">
-    <h1>➕ Add Stock</h1>
-    <p>Add new medicine inventory to the pharmacy database.</p>
+    <h1>Add Stock</h1>
+    <p>Add new medicine inventory with pricing details for profit tracking.</p>
   </div>
 
   <div id="add-sync-banner"></div>
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">New Medicine Entry</span>
-    </div>
-    <div class="card-body">
-      <div class="form-grid form-grid-2">
 
-        <div class="field">
-          <label>Type of Medicine *</label>
-          <select id="medType" required>
-            <option value="">— Select Type —</option>
-          </select>
+  <!-- Tab switcher: Quick Entry vs Detailed -->
+  <div class="tab-switcher">
+    <button class="tab-btn active" onclick="switchTab('basic')">Basic Entry</button>
+    <button class="tab-btn" onclick="switchTab('detailed')">Detailed Entry (with Pricing)</button>
+  </div>
+
+  <!-- ===== BASIC TAB ===== -->
+  <div class="tab-panel active" id="tab-basic">
+    <div class="card">
+      <div class="card-header"><span class="card-title">New Stock Entry</span></div>
+      <div class="card-body">
+        <div class="form-grid form-grid-2">
+          <div class="field">
+            <label>Type of Medicine *</label>
+            <select id="b-medType" required></select>
+          </div>
+          <div class="field">
+            <label>Name of Medicine *</label>
+            <input type="text" id="b-medName" placeholder="e.g. Paracetamol 500mg"/>
+          </div>
+          <div class="field">
+            <label>Brand Name</label>
+            <input type="text" id="b-brandName" placeholder="e.g. Calpol, Dolo"/>
+          </div>
+          <div class="field">
+            <label>Quantity Type *</label>
+            <select id="b-qtyType" onchange="onBasicQtyTypeChange()" required></select>
+          </div>
+          <div class="field">
+            <label>Stock Available *</label>
+            <input type="number" id="b-quantity" min="0" placeholder="Number of units"/>
+          </div>
+          <div class="field">
+            <label>Expiry Date *</label>
+            <input type="date" id="b-expiry"/>
+          </div>
+          <div class="field" style="grid-column:1/-1;">
+            <label>Notes</label>
+            <input type="text" id="b-notes" placeholder="Optional notes"/>
+          </div>
         </div>
-
-        <div class="field">
-          <label>Name of Medicine *</label>
-          <input type="text" id="medName" placeholder="e.g. Paracetamol 500mg"/>
+        <div class="flex-end" style="margin-top:16px;">
+          <button class="btn btn-secondary" onclick="resetBasic()">Reset</button>
+          <button class="btn btn-primary" onclick="saveBasic()">Save Stock Entry</button>
         </div>
-
-        <div class="field">
-          <label>Brand Name</label>
-          <input type="text" id="brandName" placeholder="e.g. Calpol, Dolo"/>
-        </div>
-
-        <div class="field">
-          <label>Quantity Type *</label>
-          <select id="qtyType" required>
-            <option value="">— Select Unit —</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Stock Available *</label>
-          <input type="number" id="quantity" min="0" placeholder="Enter quantity" oninput="checkQtyLive()"/>
-          <p class="qty-hint" id="qty-hint">⚠️ Low stock! Quantity is ≤ 5.</p>
-        </div>
-
-        <div class="field">
-          <label>Expiry Date *</label>
-          <input type="date" id="expiry" oninput="checkExpiryLive()"/>
-        </div>
-
-        <div class="field" style="grid-column:1/-1;">
-          <label>Additional Notes</label>
-          <textarea id="notes" placeholder="Optional notes about this medicine..."></textarea>
-        </div>
-
       </div>
+    </div>
+  </div>
 
-      <div class="submit-area">
-        <button class="btn btn-primary" onclick="addStock()">💾 Save Stock Entry</button>
-        <button class="btn btn-secondary" onclick="resetForm()">↩ Reset</button>
+  <!-- ===== DETAILED TAB (with Pricing) ===== -->
+  <div class="tab-panel" id="tab-detailed">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Detailed Stock Entry with Pricing</span></div>
+      <div class="card-body">
+
+        <!-- Medicine Info -->
+        <div class="form-grid form-grid-2" style="margin-bottom:16px;">
+          <div class="field">
+            <label>Type of Medicine *</label>
+            <select id="d-medType" required></select>
+          </div>
+          <div class="field">
+            <label>Name of Medicine *</label>
+            <input type="text" id="d-medName" placeholder="e.g. Paracetamol 500mg"/>
+          </div>
+          <div class="field">
+            <label>Brand Name</label>
+            <input type="text" id="d-brandName" placeholder="e.g. Calpol, Dolo"/>
+          </div>
+          <div class="field">
+            <label>Expiry Date *</label>
+            <input type="date" id="d-expiry"/>
+          </div>
+          <div class="field">
+            <label>Quantity Type *</label>
+            <select id="d-qtyType" onchange="onQtyTypeChange()" required></select>
+          </div>
+          <div class="field">
+            <label>Stock Available *
+              <span class="hint" id="stock-hint">(number of units)</span>
+            </label>
+            <input type="number" id="d-quantity" min="0" placeholder="0" oninput="recalcPricing()"/>
+          </div>
+        </div>
+
+        <!-- Strip-specific field — tablets per strip -->
+        <div id="strip-section" style="display:none;margin-bottom:16px;">
+          <div style="background:rgba(0,153,255,.07);border:1px solid rgba(0,153,255,.2);border-radius:10px;padding:14px 16px;">
+            <p style="font-size:.82rem;font-weight:600;color:var(--info);margin:0 0 10px;">
+              &#9432; Strip Configuration — You selected Strips
+            </p>
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label>Tablets per Strip *</label>
+                <select id="d-tabletsPerStrip" onchange="recalcPricing()">
+                  <option value="10">10 tablets/strip</option>
+                  <option value="15">15 tablets/strip</option>
+                  <option value="20">20 tablets/strip</option>
+                  <option value="custom">Custom...</option>
+                </select>
+              </div>
+              <div class="field" id="custom-tps-wrap" style="display:none;">
+                <label>Custom tablets per strip</label>
+                <input type="number" id="d-customTps" min="1" placeholder="e.g. 30" oninput="recalcPricing()"/>
+              </div>
+            </div>
+            <p style="font-size:.78rem;color:var(--muted);margin:8px 0 0;">
+              Total tablets = <strong id="total-tablets-display">0</strong>
+              &nbsp;|&nbsp; Enter cost per strip or per tablet below.
+            </p>
+          </div>
+        </div>
+
+        <!-- Pricing Section -->
+        <div class="pricing-grid" id="pricing-grid">
+          <div class="section-label">Pricing Details</div>
+
+          <!-- Cost Price -->
+          <div class="field">
+            <label>
+              Cost Price *
+              <span class="hint" id="cost-label-hint">(what you paid per unit)</span>
+            </label>
+            <input type="number" id="d-costPrice" min="0" step="0.01"
+              placeholder="0.00" oninput="recalcPricing()"/>
+          </div>
+
+          <!-- Tablets: also show per-tablet cost -->
+          <div class="field" id="cost-per-tablet-wrap" style="display:none;">
+            <label>Cost per Tablet (auto)</label>
+            <input type="number" id="d-costPerTablet" min="0" step="0.001"
+              placeholder="0.000" oninput="onCostPerTabletChange()" style="background:rgba(0,153,255,.05);"/>
+            <p class="hint">Edit either — they sync automatically.</p>
+          </div>
+
+          <!-- MRP -->
+          <div class="field">
+            <label>
+              MRP *
+              <span class="hint" id="mrp-label-hint">(printed on packaging)</span>
+            </label>
+            <input type="number" id="d-mrp" min="0" step="0.01"
+              placeholder="0.00" oninput="recalcPricing()"/>
+          </div>
+
+          <!-- Discount from agency -->
+          <div class="field">
+            <label>Agency Discount %</label>
+            <input type="number" id="d-discount" min="0" max="100" step="0.1"
+              placeholder="0" oninput="recalcPricing()"/>
+            <p class="hint">Discount you got from the agency on MRP.</p>
+          </div>
+
+          <!-- Results row -->
+          <div class="price-result">
+            <div class="pr-item">
+              <span class="pr-label">Cost Price / Unit</span>
+              <span class="pr-val orange" id="res-cost">Rs. 0.00</span>
+            </div>
+            <div class="pr-item">
+              <span class="pr-label">MRP / Unit</span>
+              <span class="pr-val blue" id="res-mrp">Rs. 0.00</span>
+            </div>
+            <div class="pr-item">
+              <span class="pr-label">Max Profit / Unit</span>
+              <span class="pr-val green" id="res-profit-unit">Rs. 0.00</span>
+            </div>
+            <div class="pr-item">
+              <span class="pr-label">Max Profit on Batch</span>
+              <span class="pr-val green" id="res-profit-batch">Rs. 0.00</span>
+            </div>
+            <div class="pr-item" id="tablet-cost-wrap" style="display:none;">
+              <span class="pr-label">Cost per Tablet</span>
+              <span class="pr-val orange" id="res-tablet-cost">Rs. 0.000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:16px;">
+          <label>Notes</label>
+          <input type="text" id="d-notes" placeholder="Optional notes about this batch"/>
+        </div>
+
+        <div class="flex-end" style="margin-top:20px;">
+          <button class="btn btn-secondary" onclick="resetDetailed()">Reset</button>
+          <button class="btn btn-primary" onclick="saveDetailed()">Save Stock Entry</button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Recent entries -->
-  <div class="card" style="margin-top:24px;">
+  <div class="card" style="margin-top:20px;">
     <div class="card-header">
       <span class="card-title">Recently Added (Last 5)</span>
+      <a href="view-stock.html" class="btn btn-sm btn-secondary">View All</a>
     </div>
     <div class="card-body">
       <div class="table-wrap" id="recent-wrap">
-        <div class="empty-state"><div class="empty-icon">📭</div><p>No entries yet.</p></div>
+        <div class="empty-state"><div class="empty-icon" style="font-size:36px;">&#128230;</div><p>No entries yet.</p></div>
       </div>
     </div>
   </div>
-
 </div>
 </div>
 
@@ -141,154 +309,312 @@
 <script>
 RP.guard();
 RP.applyTheme();
+
+// ---- Local date helper ----
+function localDateStr(d){
+  var dt=d?new Date(d):new Date();
+  var y=dt.getFullYear();
+  var m=String(dt.getMonth()+1).padStart(2,'0');
+  var day=String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+
+
 function logout(){ sessionStorage.removeItem('rp_auth'); window.location.href='index.html'; }
-function toggleTheme(){ const t=RP.getTheme()==='dark'?'light':'dark'; RP.setTheme(t); document.getElementById('theme-btn').innerHTML=t==='dark'?'&#127769;':'&#9728;'; }
+function toggleTheme(){
+  var t=RP.getTheme()==='dark'?'light':'dark';
+  RP.setTheme(t);
+  document.getElementById('theme-btn').innerHTML=t==='dark'?'&#127769;':'&#9728;';
+}
 document.getElementById('theme-btn').innerHTML=RP.getTheme()==='dark'?'&#127769;':'&#9728;';
 
-// Populate dropdowns
-const medSel=document.getElementById('medType');
-const qtySel=document.getElementById('qtyType');
-RP.MED_TYPES.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; medSel.appendChild(o); });
-RP.QTY_TYPES.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; qtySel.appendChild(o); });
-
-// Badge
-function updateBadge(){ const a=RP.computeAlerts(); const b=document.getElementById('alert-badge'); b.style.display=a.length?'inline-block':'none'; b.textContent=a.length; }
+function updateBadge(){
+  var a=RP.computeAlerts();
+  var b=document.getElementById('alert-badge');
+  b.style.display=a.length?'inline-block':'none';
+  b.textContent=a.length;
+}
 updateBadge();
-// Register re-render callback for when sync completes
-window._rpOnSyncComplete = function(){ buildRecentTable(); };
+
+// Sync banner
+window._rpOnSyncComplete=function(){ buildRecentTable(); };
 RP.showSyncBanner('add-sync-banner');
 
+/* ---- Populate dropdowns ---- */
+['b-medType','d-medType'].forEach(function(id){
+  var sel=document.getElementById(id);
+  RP.MED_TYPES.forEach(function(t){
+    sel.innerHTML+='<option value="'+t+'">'+t+'</option>';
+  });
+});
+['b-qtyType','d-qtyType'].forEach(function(id){
+  var sel=document.getElementById(id);
+  // Add "Tablets" as first option for per-tablet pricing
+  var allTypes=['Tablets'].concat(RP.QTY_TYPES.filter(function(q){return q!=='Tablets';}));
+  allTypes.forEach(function(t){
+    sel.innerHTML+='<option value="'+t+'">'+t+'</option>';
+  });
+});
 
-function checkQtyLive(){
-  const v=parseInt(document.getElementById('quantity').value)||0;
-  const hint=document.getElementById('qty-hint');
-  hint.style.display=(v>0&&v<=RP.LOW_STOCK)?'block':'none';
+/* ---- Tab switching ---- */
+function switchTab(name){
+  ['basic','detailed'].forEach(function(n){
+    document.getElementById('tab-'+n).classList.toggle('active',n===name);
+    document.querySelectorAll('.tab-btn').forEach(function(b,i){
+      b.classList.toggle('active',['basic','detailed'][i]===name);
+    });
+  });
 }
 
-function checkExpiryLive(){
-  const v=document.getElementById('expiry').value;
-  if(!v) return;
-  const exp=new Date(v);
-  const warn=new Date(); warn.setMonth(warn.getMonth()+RP.EXPIRY_WARN_MONTHS);
-  if(exp<=warn&&exp>=new Date()){
-    // Show inline warning
+/* ============================================================
+   BASIC ENTRY
+============================================================ */
+function onBasicQtyTypeChange(){
+  // No special logic needed for basic tab
+}
+function saveBasic(){
+  var medType  = document.getElementById('b-medType').value;
+  var name     = document.getElementById('b-medName').value.trim();
+  var brand    = document.getElementById('b-brandName').value.trim();
+  var qtyType  = document.getElementById('b-qtyType').value;
+  var qty      = document.getElementById('b-quantity').value;
+  var expiry   = document.getElementById('b-expiry').value;
+  var notes    = document.getElementById('b-notes').value.trim();
+  if(!medType||!name||!qtyType||qty===''||!expiry){
+    RP.toast('Please fill all required fields.','error'); return;
   }
+  var item={
+    id:RP.uid(), medType:medType, name:name, brand:brand, qtyType:qtyType,
+    quantity:parseInt(qty), expiry:expiry, notes:notes,
+    costPrice:0, costPricePerUnit:0, mrp:0, mrpPerUnit:0,
+    tabletsPerStrip:0, addedOn:localDateStr()
+  };
+  saveItem(item);
+  resetBasic();
+}
+function resetBasic(){
+  ['b-medType','b-qtyType'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['b-medName','b-brandName','b-quantity','b-expiry','b-notes'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
 }
 
-function addStock(){
-  const medType=document.getElementById('medType').value;
-  const name=document.getElementById('medName').value.trim();
-  const brand=document.getElementById('brandName').value.trim();
-  const qtyType=document.getElementById('qtyType').value;
-  const qty=document.getElementById('quantity').value;
-  const expiry=document.getElementById('expiry').value;
-  const notes=document.getElementById('notes').value.trim();
+/* ============================================================
+   DETAILED ENTRY — Pricing logic
+============================================================ */
+function onQtyTypeChange(){
+  var qt=document.getElementById('d-qtyType').value;
+  var isStrip=(qt==='Strips'||qt==='Tablets');
+  // Show strip section for Strips or Tablets qty type
+  document.getElementById('strip-section').style.display=isStrip?'block':'none';
+  document.getElementById('cost-per-tablet-wrap').style.display=isStrip?'flex':'none';
+  document.getElementById('tablet-cost-wrap').style.display=isStrip?'flex':'none';
+
+  // Update labels
+  var hint=document.getElementById('stock-hint');
+  var costHint=document.getElementById('cost-label-hint');
+  var mrpHint=document.getElementById('mrp-label-hint');
+  if(isStrip){
+    hint.textContent='(number of strips)';
+    costHint.textContent='per strip (cost you paid)';
+    mrpHint.textContent='per strip (MRP on strip)';
+  } else {
+    hint.textContent='(number of '+qt.toLowerCase()+')';
+    costHint.textContent='per '+qt.toLowerCase().replace(/s$/,'')+' (what you paid)';
+    mrpHint.textContent='per '+qt.toLowerCase().replace(/s$/,'')+' (MRP on pack)';
+  }
+  recalcPricing();
+}
+
+function getTabletsPerStrip(){
+  var sel=document.getElementById('d-tabletsPerStrip');
+  if(!sel) return 10;
+  if(sel.value==='custom'){
+    return parseInt(document.getElementById('d-customTps').value)||10;
+  }
+  return parseInt(sel.value)||10;
+}
+
+document.getElementById('d-tabletsPerStrip').onchange=function(){
+  var isCustom=this.value==='custom';
+  document.getElementById('custom-tps-wrap').style.display=isCustom?'block':'none';
+  recalcPricing();
+};
+
+function recalcPricing(){
+  var qt       = document.getElementById('d-qtyType').value;
+  var isStrip  = (qt==='Strips'||qt==='Tablets');
+  var qty      = parseFloat(document.getElementById('d-quantity').value)||0;
+  var costPrice= parseFloat(document.getElementById('d-costPrice').value)||0;
+  var mrp      = parseFloat(document.getElementById('d-mrp').value)||0;
+  var tps      = isStrip?getTabletsPerStrip():1;
+  var totalTablets = isStrip?(qty*tps):qty;
+
+  // Update total tablets display
+  if(isStrip) document.getElementById('total-tablets-display').textContent=totalTablets;
+
+  // Cost per tablet (for strips)
+  var costPerTablet = isStrip&&tps>0 ? costPrice/tps : costPrice;
+
+  // Sync cost-per-tablet input (only update if not currently being edited)
+  var cptInput=document.getElementById('d-costPerTablet');
+  if(document.activeElement!==cptInput){
+    cptInput.value = isStrip&&costPrice>0 ? costPerTablet.toFixed(3) : '';
+  }
+
+  // Profit per unit (strip or bottle etc.)
+  var profitPerUnit = mrp - costPrice;
+  // Profit on entire batch
+  var profitBatch = profitPerUnit * qty;
+
+  // Update results
+  document.getElementById('res-cost').textContent   = 'Rs. '+costPrice.toFixed(2);
+  document.getElementById('res-mrp').textContent    = 'Rs. '+mrp.toFixed(2);
+  document.getElementById('res-profit-unit').textContent  = 'Rs. '+profitPerUnit.toFixed(2);
+  document.getElementById('res-profit-batch').textContent = 'Rs. '+profitBatch.toFixed(2);
+  if(isStrip) document.getElementById('res-tablet-cost').textContent = 'Rs. '+costPerTablet.toFixed(3);
+
+  // Color profit: red if negative
+  var pColor = profitPerUnit>=0 ? 'var(--success)' : 'var(--danger)';
+  document.getElementById('res-profit-unit').style.color  = pColor;
+  document.getElementById('res-profit-batch').style.color = pColor;
+}
+
+// When user edits cost-per-tablet — back-calculate cost per strip
+function onCostPerTabletChange(){
+  var tps=getTabletsPerStrip();
+  var cpt=parseFloat(document.getElementById('d-costPerTablet').value)||0;
+  var costPerStrip=cpt*tps;
+  document.getElementById('d-costPrice').value=costPerStrip.toFixed(2);
+  recalcPricing();
+}
+
+function saveDetailed(){
+  var medType  = document.getElementById('d-medType').value;
+  var name     = document.getElementById('d-medName').value.trim();
+  var brand    = document.getElementById('d-brandName').value.trim();
+  var qtyType  = document.getElementById('d-qtyType').value;
+  var qty      = document.getElementById('d-quantity').value;
+  var expiry   = document.getElementById('d-expiry').value;
+  var notes    = document.getElementById('d-notes').value.trim();
+  var costPrice= parseFloat(document.getElementById('d-costPrice').value)||0;
+  var mrp      = parseFloat(document.getElementById('d-mrp').value)||0;
 
   if(!medType||!name||!qtyType||qty===''||!expiry){
     RP.toast('Please fill all required fields.','error'); return;
   }
+  if(costPrice<=0){ RP.toast('Please enter cost price.','error'); return; }
+  if(mrp<=0){ RP.toast('Please enter MRP.','error'); return; }
+  if(costPrice>mrp){ if(!confirm('Cost price is higher than MRP. Continue?')) return; }
 
-  const item={
-    id:RP.uid(), medType, name, brand, qtyType,
-    quantity:parseInt(qty), expiry, notes,
-    addedOn: new Date().toISOString().slice(0,10)
+  var isStrip=(qtyType==='Strips'||qtyType==='Tablets');
+  var tps=isStrip?getTabletsPerStrip():1;
+
+  var item={
+    id:RP.uid(), medType:medType, name:name, brand:brand, qtyType:qtyType,
+    quantity:parseInt(qty), expiry:expiry, notes:notes,
+    // Pricing fields — stored per UNIT (strip, bottle, etc.)
+    costPrice:    costPrice,               // cost per unit (what you paid to agency)
+    mrp:          mrp,                     // MRP per unit
+    tabletsPerStrip: isStrip?tps:0,        // for tablets/strips only
+    costPricePerUnit: costPrice,           // alias for clarity
+    mrpPerUnit:   mrp,                     // alias for clarity
+    // Per-tablet helpers (tablets only)
+    costPerTablet: isStrip?(costPrice/tps):0,
+    mrpPerTablet:  isStrip?(mrp/tps):0,
+    // Batch totals
+    totalCostBatch: costPrice*parseInt(qty),
+    totalMrpBatch:  mrp*parseInt(qty),
+    addedOn: localDateStr()
   };
 
-  const stock=RP.getStock();
-  stock.push(item);
-  RP.saveStock(stock);
+  saveItem(item);
+  resetDetailed();
+}
 
-  // Check low stock
-  const qv=parseInt(qty);
-  if(qv>0&&qv<=RP.LOW_STOCK){
-    showLowPopup(item);
-    triggerLowStockEmail(item);
+function resetDetailed(){
+  ['d-medType','d-qtyType','d-tabletsPerStrip'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value=el.options?el.options[0].value:'';
+  });
+  ['d-medName','d-brandName','d-expiry','d-notes','d-quantity',
+   'd-costPrice','d-mrp','d-discount','d-customTps','d-costPerTablet'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  ['res-cost','res-mrp','res-profit-unit','res-profit-batch'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.textContent='Rs. 0.00';
+  });
+  document.getElementById('strip-section').style.display='none';
+  document.getElementById('cost-per-tablet-wrap').style.display='none';
+  document.getElementById('tablet-cost-wrap').style.display='none';
+  document.getElementById('custom-tps-wrap').style.display='none';
+  document.getElementById('total-tablets-display').textContent='0';
+}
+
+/* ============================================================
+   SAVE ITEM — shared by both tabs
+============================================================ */
+function saveItem(item){
+  RP.addStockItem(item);
+
+  // Low stock check
+  var qty=parseInt(item.quantity)||0;
+  if(qty>0&&qty<=RP.LOW_STOCK){
+    document.getElementById('low-popup-msg').innerHTML=
+      '<strong>'+item.name+'</strong> has only <strong>'+qty+' '+item.qtyType+'</strong> in stock.';
+    document.getElementById('low-popup').classList.add('open');
   }
 
-  // Check expiry
-  const exp=new Date(expiry);
-  const warnDate=new Date(); warnDate.setMonth(warnDate.getMonth()+RP.EXPIRY_WARN_MONTHS);
-  if(exp<=warnDate&&exp>=new Date()){
-    showExpPopup(item);
-    triggerExpiryEmail(item);
+  // Expiry check
+  if(item.expiry){
+    var exp=new Date(item.expiry);
+    var warn=new Date(); warn.setMonth(warn.getMonth()+RP.EXPIRY_WARN_MONTHS);
+    if(exp<=warn&&exp>=new Date()){
+      var days=Math.ceil((exp-new Date())/(1000*60*60*24));
+      document.getElementById('exp-popup-msg').innerHTML=
+        '<strong>'+item.name+'</strong> expires in <strong>'+days+' days</strong> ('+item.expiry+').';
+      document.getElementById('exp-popup').classList.add('open');
+    }
   }
 
-  // Sync to sheets
-  RP.postToSheet({action:'addStock',data:item});
-
-  RP.toast('✅ Stock entry saved successfully!','success');
-  resetForm();
   buildRecentTable();
   updateBadge();
+  RP.toast('Stock entry saved successfully!','success');
 }
 
-function showLowPopup(item){
-  document.getElementById('low-popup-msg').innerHTML=
-    `<strong>${item.name}</strong> (${item.brand||item.medType}) has only <strong>${item.quantity} ${item.qtyType}</strong> in stock.<br><br>An alert has been saved and an email notification will be sent.`;
-  document.getElementById('low-popup').classList.add('open');
-}
-function closeLowPopup(){ document.getElementById('low-popup').classList.remove('open'); }
-
-function showExpPopup(item){
-  const days=Math.ceil((new Date(item.expiry)-new Date())/(1000*60*60*24));
-  document.getElementById('exp-popup-msg').innerHTML=
-    `<strong>${item.name}</strong> will expire in <strong>${days} days</strong> (${item.expiry}).<br><br>Please take action before it expires.`;
-  document.getElementById('exp-popup').classList.add('open');
-}
-function closeExpPopup(){ document.getElementById('exp-popup').classList.remove('open'); }
-
-function triggerLowStockEmail(item){
-  // Sends via Apps Script / EmailJS
-  const subject=`⚠️ Low Stock Alert — ${item.name}`;
-  const table=makeEmailTable([item]);
-  console.log('[EMAIL] Low stock alert for',item.name);
-  // RP.postToSheet({action:'sendEmail',to:RP.OWNER_EMAIL,subject,html:table});
-}
-
-function triggerExpiryEmail(item){
-  const subject=`⏰ Expiry Alert — ${item.name}`;
-  const table=makeEmailTable([item]);
-  console.log('[EMAIL] Expiry alert for',item.name);
-  // RP.postToSheet({action:'sendEmail',to:RP.OWNER_EMAIL,subject,html:table});
-}
-
-function makeEmailTable(items){
-  const rows=items.map(i=>`<tr>
-    <td>${i.name}</td><td>${i.medType}</td><td>${i.brand||'—'}</td>
-    <td>${i.quantity} ${i.qtyType}</td><td>${i.expiry}</td>
-  </tr>`).join('');
-  return `<table border="1" style="border-collapse:collapse;font-family:sans-serif;">
-    <thead><tr style="background:#00d4aa;color:#fff;">
-      <th>Medicine</th><th>Type</th><th>Brand</th><th>Quantity</th><th>Expiry</th>
-    </tr></thead><tbody>${rows}</tbody>
-  </table>`;
-}
-
-function resetForm(){
-  ['medType','medName','brandName','qtyType','quantity','expiry','notes'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){el.tagName==='SELECT'?el.value='':el.value='';}
-  });
-  document.getElementById('qty-hint').style.display='none';
-}
-
+/* ============================================================
+   RECENT TABLE
+============================================================ */
 function buildRecentTable(){
-  const stock=[...RP.getStock()].reverse().slice(0,5);
-  const wrap=document.getElementById('recent-wrap');
-  if(!stock.length){ wrap.innerHTML=`<div class="empty-state"><div class="empty-icon">📭</div><p>No entries yet.</p></div>`; return; }
-  wrap.innerHTML=`<table>
-    <thead><tr><th>Medicine</th><th>Type</th><th>Brand</th><th>Qty</th><th>Unit</th><th>Expiry</th><th>Added</th></tr></thead>
-    <tbody>${stock.map(s=>`<tr>
-      <td><strong>${s.name}</strong></td>
-      <td><span class="badge badge-info">${s.medType}</span></td>
-      <td>${s.brand||'—'}</td>
-      <td class="mono">${s.quantity}</td>
-      <td>${s.qtyType}</td>
-      <td>${RP.fmtDate(s.expiry)}</td>
-      <td>${RP.fmtDate(s.addedOn)}</td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+  var stock=[].concat(RP.getStock()).reverse().slice(0,5);
+  var wrap=document.getElementById('recent-wrap');
+  if(!stock.length){
+    wrap.innerHTML='<div class="empty-state"><div class="empty-icon" style="font-size:36px;">&#128230;</div><p>No entries yet.</p></div>';
+    return;
+  }
+  wrap.innerHTML='<table>'+
+    '<thead><tr>'+
+      '<th>Medicine</th><th>Type</th><th>Brand</th>'+
+      '<th>Qty</th><th>Unit</th>'+
+      '<th>Cost/Unit</th><th>MRP/Unit</th>'+
+      '<th>Expiry</th><th>Added</th>'+
+    '</tr></thead>'+
+    '<tbody>'+stock.map(function(s){
+      var hasCost=s.costPrice>0;
+      return '<tr>'+
+        '<td><strong>'+s.name+'</strong></td>'+
+        '<td><span class="badge badge-info">'+s.medType+'</span></td>'+
+        '<td>'+(s.brand||'—')+'</td>'+
+        '<td class="mono">'+s.quantity+'</td>'+
+        '<td>'+s.qtyType+'</td>'+
+        '<td class="mono">'+(hasCost?'Rs.'+parseFloat(s.costPrice).toFixed(2):'—')+'</td>'+
+        '<td class="mono">'+(s.mrp>0?'Rs.'+parseFloat(s.mrp).toFixed(2):'—')+'</td>'+
+        '<td>'+RP.fmtDate(s.expiry)+'</td>'+
+        '<td>'+RP.fmtDate(s.addedOn)+'</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table>';
 }
+
 buildRecentTable();
 </script>
 </body>

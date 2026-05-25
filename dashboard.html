@@ -20,6 +20,7 @@
     <a href="view-stock.html" class="nav-link">&#128230; <span class="nav-text">View Stock</span></a>
     <a href="sort-stock.html" class="nav-link">&#8964; <span class="nav-text">Sort Stock</span></a>
     <a href="billing.html" class="nav-link">&#128451; <span class="nav-text">Bill Generation</span></a>
+    <a href="stock-sale.html" class="nav-link">&#128200; <span class="nav-text">Stock Sale</span></a>
     <a href="scan-stock.html" class="nav-link">&#128247; <span class="nav-text">Scan Stock</span></a>
     <a href="alerts.html" class="nav-link">&#128276; <span class="nav-text">Alerts</span><span class="badge" id="alert-badge" style="display:none">0</span></a>
   </div>
@@ -51,6 +52,9 @@
 
   <!-- Stats row -->
   <div class="stat-grid" id="stat-grid"></div>
+
+  <!-- Profit Summary Row -->
+  <div class="stat-grid" id="profit-grid" style="margin-top:0;margin-bottom:0;"></div>
 
   <!-- Alerts Section -->
   <div class="card" style="margin-bottom:24px;">
@@ -238,7 +242,40 @@ function closePopup(){ document.getElementById('popup-overlay').classList.remove
 window._rpOnSyncComplete = function(){ buildStats(); refreshAlerts(); buildRecentTable(); };
 RP.showSyncBanner('dashboard-sync-banner');
 
+function buildProfitGrid(){
+  if(typeof RP_SALES === 'undefined') return;
+  var today   = RP_SALES.getToday();
+  var allSales= RP_SALES.getAll();
+  var todayP  = RP_SALES.getProfit(today);
+  var overallP= RP_SALES.getProfit(allSales);
+  var todayRev= today.reduce(function(s,x){return s+(x.totalSelling||0);},0);
+  var totalRev= allSales.reduce(function(s,x){return s+(x.totalSelling||0);},0);
+  function pc(v){ return v>0?'var(--success)':v<0?'var(--danger)':'var(--muted)'; }
+  document.getElementById('profit-grid').innerHTML=
+    '<div class="stat-card">'+
+      '<div class="stat-icon" style="font-size:18px;">Today Profit</div>'+
+      '<div class="stat-val" style="color:'+pc(todayP)+';">Rs.'+todayP.toFixed(2)+'</div>'+
+      '<div class="stat-lbl">'+today.length+' sale(s)</div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-icon" style="font-size:18px;">Overall Profit</div>'+
+      '<div class="stat-val" style="color:'+pc(overallP)+';">Rs.'+overallP.toFixed(2)+'</div>'+
+      '<div class="stat-lbl">'+allSales.length+' total sale(s)</div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-icon" style="font-size:18px;">Today Revenue</div>'+
+      '<div class="stat-val accent">Rs.'+todayRev.toFixed(2)+'</div>'+
+      '<div class="stat-lbl">From stock sales</div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-icon" style="font-size:18px;">Total Revenue</div>'+
+      '<div class="stat-val accent">Rs.'+totalRev.toFixed(2)+'</div>'+
+      '<div class="stat-lbl">All time</div>'+
+    '</div>';
+}
+
 buildStats();
+buildProfitGrid();
 refreshAlerts();
 buildRecentTable();
 setTimeout(showAutoPopups, 800);
