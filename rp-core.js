@@ -405,7 +405,14 @@ const RP_SALES = {
   add(sale, skipStockDeduct){
     sale.id        = sale.id || RP.uid();
     sale.createdOn = sale.createdOn || new Date().toISOString();
-    sale.date      = sale.date      || RP.localDateStr();
+    // Always ensure .date is a clean YYYY-MM-DD local date string
+    // If caller passed it from the date input, keep it — it's already correct
+    // If missing, generate from local device time (not UTC)
+    if(!sale.date || sale.date.length < 10){
+      sale.date = RP.localDateStr();
+    } else {
+      sale.date = sale.date.slice(0,10); // strip any time component
+    }
     const sales = this._get();
     sales.push(sale);
     this._set(sales);
@@ -449,16 +456,28 @@ const RP_SALES = {
     });
   },
 
-  // Get the local YYYY-MM-DD date of a sale record safely
-  // Uses stored .date field (already localDateStr format)
-  // Falls back to parsing createdOn in LOCAL timezone
+  // Get the YYYY-MM-DD date of a sale record
+  // NEVER use new Date() here — it causes UTC timezone shift
+  // .date field is always set by localDateStr() since the fix
+  // For old records without .date: use createdOn string directly
+  // createdOn format: "2025-01-15T20:30:00.000Z"
+  // We add IST offset (+5:30 = 330 mins) to the UTC time as string math
   _saleDate(s){
-    if(s.date && /^\d{4}-\d{2}-\d{2}/.test(s.date)){
+    // Best case: .date field exists and is YYYY-MM-DD (set by localDateStr)
+    if(s.date && s.date.length >= 10 && s.date[4] === '-'){
       return s.date.slice(0,10);
     }
-    // createdOn is ISO string — extract local date via localDateStr
+    // Fallback for old records: adjust UTC ISO string by local offset
     if(s.createdOn){
-      return RP.localDateStr(new Date(s.createdOn));
+      // Get device timezone offset in minutes (e.g. IST = -330)
+      var offsetMs = new Date().getTimezoneOffset() * 60000;
+      // Shift the UTC timestamp by local offset to get local time
+      var localMs  = new Date(s.createdOn).getTime() - offsetMs;
+      var localDt  = new Date(localMs);
+      var y   = localDt.getUTCFullYear();
+      var m   = String(localDt.getUTCMonth()+1).padStart(2,'0');
+      var d   = String(localDt.getUTCDate()).padStart(2,'0');
+      return y+'-'+m+'-'+d;
     }
     return '';
   }

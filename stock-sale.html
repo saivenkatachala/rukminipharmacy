@@ -148,7 +148,7 @@
             <!-- Date -->
             <div class="field">
               <label>Sale Date</label>
-              <input type="date" id="s-date"/>
+              <input type="date" id="s-date" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:.9rem;"/>
             </div>
 
           </div>
@@ -407,7 +407,9 @@ function submitSale(){
   var totalSell     = sellPerUnit*qty;
   var totalCost     = costPerUnit*qty;
   var profit        = totalSell-totalCost;
-  var date          = document.getElementById('s-date').value;
+  var dateInput     = document.getElementById('s-date').value;
+  // Always use local date — never let it be empty or UTC-shifted
+  var date          = (dateInput && dateInput.length >= 10) ? dateInput.slice(0,10) : localDateStr();
 
   var sale={
     id:           RP.uid(),
@@ -499,6 +501,9 @@ renderProfitSummary();
    SALE HISTORY
 ============================================================ */
 function renderHistory(){
+  // Re-ensure date field always shows today's local date
+  var sDateEl=document.getElementById('s-date');
+  if(sDateEl&&!sDateEl.value) sDateEl.value=localDateStr();
   var filter=document.getElementById('hist-filter').value;
   var now=new Date();
   var sales;
